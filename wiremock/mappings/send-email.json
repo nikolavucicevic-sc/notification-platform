@@ -1,0 +1,17 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/send-email"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"message\": \"Email sent successfully\"}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

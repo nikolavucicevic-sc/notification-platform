@@ -1,0 +1,132 @@
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: notification-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: notification_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - notification-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: notification-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"    # messaging port
+      - "15672:15672"  # management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - notification-network
+
+  wiremock:
+    image: wiremock/wiremock:latest
+    container_name: notification-wiremock
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./wiremock:/home/wiremock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - notification-network
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres:5432/notification_platform
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+      RABBITMQ_EMAIL_QUEUE: email.send
+      RABBITMQ_STATUS_QUEUE: email.status
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - notification-network
+
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    container_name: customer-service
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres:5432/notification_platform
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - notification-network
+
+  email-sender:
+    build:
+      context: ./email-sender
+      dockerfile: Dockerfile
+    container_name: email-sender
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672/
+      RABBITMQ_EMAIL_QUEUE: email.send
+      RABBITMQ_STATUS_QUEUE: email.status
+      WIREMOCK_URL: http://wiremock:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - notification-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: notification-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - notification-service
+    restart: unless-stopped
+    networks:
+      - notification-network
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  notification-network:
+    driver: bridge
