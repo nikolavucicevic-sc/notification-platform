@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install customer-service dependencies
+        run: |
+          cd customer-service
+          pip install -r requirements.txt
+
+      - name: Install notification-service dependencies
+        run: |
+          cd notification-service
+          pip install -r requirements.txt
+
+      - name: Install email-sender dependencies
+        run: |
+          cd email-sender
+          pip install -r requirements.txt
+
+      - name: Build Docker images
+        run: docker compose build
