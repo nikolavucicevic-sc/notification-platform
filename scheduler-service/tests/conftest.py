@@ -11,9 +11,13 @@ from fastapi.testclient import TestClient
 # Set test database URL before importing app
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.database import Base, get_db
-from app.main import app
-from app.models.scheduled_notification import ScheduleType, RecurrenceType, JobStatus
+# Mock scheduler functions before importing app
+with patch('app.services.scheduler.start_scheduler'), \
+     patch('app.services.scheduler.stop_scheduler'), \
+     patch('app.services.scheduler.load_existing_jobs'):
+    from app.database import Base, get_db
+    from app.main import app
+    from app.models.scheduled_notification import ScheduleType, RecurrenceType, JobStatus
 
 
 # Create in-memory SQLite database for testing
