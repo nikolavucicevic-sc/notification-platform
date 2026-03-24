@@ -1,6 +1,9 @@
 import pytest
+import logging
 from datetime import datetime, timedelta
 from uuid import uuid4
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.api
@@ -9,10 +12,13 @@ class TestCreateScheduledNotification:
 
     def test_create_one_time_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test creating a one-time scheduled notification."""
+        logger.info("Testing one-time schedule creation")
         response = client.post("/schedules/", json=sample_schedule_data)
+        logger.info(f"Response status: {response.status_code}")
 
         assert response.status_code == 201
         data = response.json()
+        logger.info(f"Created schedule with ID: {data.get('id')}")
         assert data["schedule_type"] == "ONCE"
         assert data["subject"] == sample_schedule_data["subject"]
         assert data["body"] == sample_schedule_data["body"]
@@ -20,6 +26,7 @@ class TestCreateScheduledNotification:
         assert data["is_active"] is True
         assert "id" in data
         assert "job_id" in data
+        logger.info("✓ One-time schedule created successfully")
 
     def test_create_recurring_schedule_success(self, client, sample_recurring_schedule_data, mock_scheduler):
         """Test creating a recurring scheduled notification."""

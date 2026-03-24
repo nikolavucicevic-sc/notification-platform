@@ -1,4 +1,5 @@
 import pytest
+import logging
 from datetime import datetime, timedelta
 from uuid import uuid4
 
@@ -9,6 +10,8 @@ from app.models.scheduled_notification import (
     JobStatus
 )
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.mark.unit
 class TestScheduledNotificationModel:
@@ -16,6 +19,7 @@ class TestScheduledNotificationModel:
 
     def test_create_one_time_schedule(self, db_session):
         """Test creating a one-time scheduled notification."""
+        logger.info("Testing one-time schedule model creation")
         scheduled_time = datetime.now() + timedelta(hours=1)
         customer_ids = [str(uuid4()), str(uuid4())]
 
@@ -33,12 +37,14 @@ class TestScheduledNotificationModel:
         db_session.commit()
         db_session.refresh(schedule)
 
+        logger.info(f"Created schedule model with ID: {schedule.id}")
         assert schedule.id is not None
         assert schedule.schedule_type == ScheduleType.ONCE
         assert schedule.scheduled_time == scheduled_time
         assert schedule.customer_ids == customer_ids
         assert schedule.is_active is True
         assert schedule.run_count == "0"
+        logger.info("✓ One-time schedule model created successfully")
 
     def test_create_recurring_schedule(self, db_session):
         """Test creating a recurring scheduled notification."""
