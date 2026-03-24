@@ -2,9 +2,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    rabbitmq_url: str
-    rabbitmq_email_queue: str = "email.send"
-    rabbitmq_status_queue: str = "email.status"
+    redis_url: str = "redis://localhost:6379"
+    redis_email_queue: str = "email:queue"
     wiremock_url: str = "http://localhost:8089"
 
     class Config:

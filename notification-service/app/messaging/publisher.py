@@ -1,33 +1,21 @@
 import json
-import aio_pika
-
 from app.database import settings
 from app.models.notification import Notification
+from app.redis_utils import RedisQueue
 
 
 async def publish_email_request(notification: Notification):
-    connection = await aio_pika.connect_robust(settings.rabbitmq_url)
+    """
+    Publish an email request to Redis queue.
 
-    async with connection:
-        channel = await connection.channel()
+    Redis Lists are used as a simple but effective message queue:
+    - Producer pushes messages with LPUSH
+    - Consumer blocks and pops with BRPOP
+    - Much simpler than RabbitMQ, perfect for this use case
+    """
+    redis_queue = RedisQueue(settings.redis_url)
 
-        # Declare dead-letter exchange and queue
-        dlx_name = f"{settings.rabbitmq_email_queue}.dlx"
-        dlq_name = f"{settings.rabbitmq_email_queue}.dlq"
-
-        await channel.declare_exchange(dlx_name, aio_pika.ExchangeType.DIRECT, durable=True)
-        await channel.declare_queue(dlq_name, durable=True)
-
-        # Declare main queue with DLX configuration
-        queue = await channel.declare_queue(
-            settings.rabbitmq_email_queue,
-            durable=True,
-            arguments={
-                "x-dead-letter-exchange": dlx_name,
-                "x-dead-letter-routing-key": dlq_name,
-            }
-        )
-
+    try:
         message_body = {
             "notification_id": str(notification.id),
             "subject": notification.subject,
@@ -36,13 +24,12 @@ async def publish_email_request(notification: Notification):
             "retry_count": 0
         }
 
-        await channel.default_exchange.publish(
-            aio_pika.Message(
-                body=json.dumps(message_body).encode(),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                expiration=300000  # 5 minutes timeout
-            ),
-            routing_key=queue.name
-        )
+        success = redis_queue.push(settings.redis_email_queue, message_body)
 
-        print(f"Published email request for notification {notification.id}")
+        if success:
+            print(f"✓ Published email request for notification {notification.id} to Redis")
+        else:
+            print(f"✗ Failed to publish email request for notification {notification.id}")
+
+    finally:
+        redis_queue.close()

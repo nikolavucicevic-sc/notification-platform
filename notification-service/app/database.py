@@ -7,9 +7,8 @@ class Settings(BaseSettings):
     database_url: str
     app_host: str = "0.0.0.0"
     app_port: int = 8002
-    rabbitmq_url: str
-    rabbitmq_email_queue: str = "email.send"
-    rabbitmq_status_queue: str = "email.status"
+    redis_url: str = "redis://localhost:6379"
+    redis_email_queue: str = "email:queue"
 
     class Config:
         env_file = ".env"

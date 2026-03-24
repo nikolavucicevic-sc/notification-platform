@@ -1,27 +1,18 @@
 import asyncio
 from app.messaging.consumer import start_email_consumer
-from app.messaging.dlq_handler import start_dlq_consumer
 from app.config import settings
-from app.rabbitmq_utils import wait_for_rabbitmq
+from app.redis_utils import wait_for_redis
 
 
 async def main():
     print(f"Email Sender starting...")
-    print(f"Listening on queue: {settings.rabbitmq_email_queue}")
+    print(f"Listening on Redis queue: {settings.redis_email_queue}")
 
-    # Wait for RabbitMQ to be ready
-    await wait_for_rabbitmq(settings.rabbitmq_url)
+    # Wait for Redis to be ready
+    wait_for_redis(settings.redis_url)
 
-    # Start both main consumer and DLQ handler
-    email_connection = await start_email_consumer()
-    dlq_connection = await start_dlq_consumer()
-
-    try:
-        await asyncio.Future()
-    finally:
-        await email_connection.close()
-        await dlq_connection.close()
-        print("Email Sender stopped")
+    # Start the email consumer (it will loop forever)
+    await start_email_consumer()
 
 
 if __name__ == "__main__":
