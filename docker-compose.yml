@@ -127,6 +127,31 @@ services:
     networks:
       - notification-network
 
+  scheduler-service:
+    build:
+      context: ./scheduler-service
+      dockerfile: Dockerfile
+    container_name: scheduler-service
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres:5432/notification_platform
+      NOTIFICATION_SERVICE_URL: http://notification-service:8002
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      notification-service:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    networks:
+      - notification-network
+
   email-sender:
     build:
       context: ./email-sender
