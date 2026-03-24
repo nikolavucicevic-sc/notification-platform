@@ -34,6 +34,8 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
       RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.4
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK_PAGING_RATIO: 0.75
+      RABBITMQ_HEARTBEAT: 60
     ports:
       - "5672:5672"    # messaging port
       - "15672:15672"  # management UI
