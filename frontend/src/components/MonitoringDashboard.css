@@ -1,0 +1,256 @@
+.monitoring-dashboard {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.auto-refresh-toggle input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+}
+
+.monitoring-section {
+  margin-bottom: 32px;
+}
+
+.monitoring-section h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+/* Health Status */
+.health-card {
+  background: var(--form-bg);
+  border-radius: 8px;
+  padding: 20px;
+  border: 2px solid;
+}
+
+.health-card.healthy {
+  border-color: var(--success);
+}
+
+.health-card.unhealthy {
+  border-color: var(--danger);
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.status-icon {
+  font-size: 24px;
+}
+
+.status-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.health-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.check {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--hover-bg);
+}
+
+.check.healthy {
+  border-left: 4px solid var(--success);
+}
+
+.check.unhealthy {
+  border-left: 4px solid var(--danger);
+}
+
+.check strong {
+  color: var(--text-primary);
+  margin-right: 8px;
+}
+
+.queue-depths {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* DLQ Section */
+.dlq-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dlq-stat {
+  background: var(--form-bg);
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dlq-channel {
+  margin-bottom: 24px;
+}
+
+.dlq-channel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dlq-channel-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.btn-danger-small {
+  padding: 6px 12px;
+  font-size: 14px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-danger-small:hover {
+  opacity: 0.9;
+}
+
+.dlq-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dlq-message {
+  background: var(--form-bg);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.dlq-message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.notification-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--hover-bg);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-retry {
+  padding: 6px 12px;
+  font-size: 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-retry:hover {
+  opacity: 0.9;
+}
+
+.dlq-message p {
+  margin: 8px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.dlq-message strong {
+  color: var(--text-secondary);
+}
+
+.failure-reason {
+  color: var(--danger);
+  font-style: italic;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: var(--success);
+  font-size: 18px;
+  background: var(--form-bg);
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .dlq-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dlq-channel-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .dlq-message-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}

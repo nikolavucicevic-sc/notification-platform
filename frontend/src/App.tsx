@@ -4,11 +4,12 @@ import NotificationList from './components/NotificationList';
 import { CustomerDashboard } from './components/CustomerDashboard';
 import { SchedulerUI } from './components/SchedulerUI';
 import { TemplateManager } from './components/TemplateManager';
+import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import './App.css';
 
-type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates';
+type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates' | 'monitoring';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -58,6 +59,12 @@ function AppContent() {
         >
           📝 Templates
         </button>
+        <button
+          className={`tab-button ${activeTab === 'monitoring' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monitoring')}
+        >
+          🔧 Monitoring
+        </button>
       </nav>
 
       <div className="app-content">
@@ -87,6 +94,12 @@ function AppContent() {
         {activeTab === 'templates' && (
           <div className="single-panel-view">
             <TemplateManager />
+          </div>
+        )}
+
+        {activeTab === 'monitoring' && (
+          <div className="single-panel-view">
+            <MonitoringDashboard />
           </div>
         )}
       </div>
