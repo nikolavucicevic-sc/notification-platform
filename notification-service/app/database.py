@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_port: int = 8002
     redis_url: str = "redis://localhost:6379"
     redis_email_queue: str = "email:queue"
+    redis_sms_queue: str = "sms:queue"
 
     class Config:
         env_file = ".env"

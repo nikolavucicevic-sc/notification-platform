@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Notification, NotificationCreate } from '../types/notification';
 import { Customer, CustomerCreate } from '../types/customer';
 import { Schedule, ScheduleCreate } from '../types/schedule';
+import { Template, TemplateCreate, TemplateUpdate, TemplateRenderRequest, TemplateRenderResponse } from '../types/template';
 
 const API_BASE_URL = '/api';
 
@@ -90,6 +91,39 @@ export const scheduleApi = {
 
   resumeSchedule: async (id: string): Promise<Schedule> => {
     const response = await api.post<Schedule>(`/schedules/${id}/resume`);
+    return response.data;
+  },
+};
+
+// Template API
+export const templateApi = {
+  getTemplates: async (channel_type?: string): Promise<Template[]> => {
+    const params = channel_type ? { channel_type } : {};
+    const response = await api.get<Template[]>('/templates/', { params });
+    return response.data;
+  },
+
+  getTemplate: async (id: string): Promise<Template> => {
+    const response = await api.get<Template>(`/templates/${id}`);
+    return response.data;
+  },
+
+  createTemplate: async (template: TemplateCreate): Promise<Template> => {
+    const response = await api.post<Template>('/templates/', template);
+    return response.data;
+  },
+
+  updateTemplate: async (id: string, template: TemplateUpdate): Promise<Template> => {
+    const response = await api.put<Template>(`/templates/${id}`, template);
+    return response.data;
+  },
+
+  deleteTemplate: async (id: string): Promise<void> => {
+    await api.delete(`/templates/${id}`);
+  },
+
+  renderTemplate: async (request: TemplateRenderRequest): Promise<TemplateRenderResponse> => {
+    const response = await api.post<TemplateRenderResponse>('/templates/render', request);
     return response.data;
   },
 };

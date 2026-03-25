@@ -3,11 +3,12 @@ import NotificationForm from './components/NotificationForm';
 import NotificationList from './components/NotificationList';
 import { CustomerDashboard } from './components/CustomerDashboard';
 import { SchedulerUI } from './components/SchedulerUI';
+import { TemplateManager } from './components/TemplateManager';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import './App.css';
 
-type Tab = 'notifications' | 'customers' | 'scheduler';
+type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -51,6 +52,12 @@ function AppContent() {
         >
           📅 Scheduler
         </button>
+        <button
+          className={`tab-button ${activeTab === 'templates' ? 'active' : ''}`}
+          onClick={() => setActiveTab('templates')}
+        >
+          📝 Templates
+        </button>
       </nav>
 
       <div className="app-content">
@@ -74,6 +81,12 @@ function AppContent() {
         {activeTab === 'scheduler' && (
           <div className="single-panel-view">
             <SchedulerUI />
+          </div>
+        )}
+
+        {activeTab === 'templates' && (
+          <div className="single-panel-view">
+            <TemplateManager />
           </div>
         )}
       </div>

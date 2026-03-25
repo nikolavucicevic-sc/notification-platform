@@ -9,6 +9,7 @@ from app.database import Base
 
 class NotificationType(enum.Enum):
     EMAIL = "EMAIL"
+    SMS = "SMS"
 
 
 class NotificationStatus(enum.Enum):
@@ -23,7 +24,7 @@ class Notification(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     notification_type = Column(Enum(NotificationType), nullable=False)
-    subject = Column(String, nullable=False)
+    subject = Column(String, nullable=True)  # Optional - only for EMAIL
     body = Column(String, nullable=False)
     customer_ids = Column(JSON, nullable=False)
     status = Column(Enum(NotificationStatus), nullable=False, default=NotificationStatus.PENDING)

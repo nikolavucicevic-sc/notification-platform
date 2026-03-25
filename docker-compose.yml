@@ -83,6 +83,7 @@ services:
       DATABASE_URL: postgresql://admin:admin@postgres:5432/notification_platform
       REDIS_URL: redis://redis:6379
       REDIS_EMAIL_QUEUE: email:queue
+      REDIS_SMS_QUEUE: sms:queue
     ports:
       - "8002:8002"
     depends_on:
@@ -147,6 +148,28 @@ services:
     networks:
       - notification-network
 
+  template-service:
+    build:
+      context: ./template-service
+      dockerfile: Dockerfile
+    container_name: template-service
+    environment:
+      DATABASE_URL: postgresql://admin:admin@postgres:5432/notification_platform
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    networks:
+      - notification-network
+
   email-sender:
     build:
       context: ./email-sender
@@ -161,6 +184,33 @@ services:
         condition: service_healthy
       wiremock:
         condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+    networks:
+      - notification-network
+
+  sms-sender:
+    build:
+      context: ./sms-sender
+      dockerfile: Dockerfile
+    container_name: sms-sender
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_SMS_QUEUE: sms:queue
+      CUSTOMER_SERVICE_URL: http://customer-service:8001
+      SMS_API_URL: http://wiremock:8080/sms/send
+    depends_on:
+      redis:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+      customer-service:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:

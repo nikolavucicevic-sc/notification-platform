@@ -111,13 +111,19 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
           {notifications.map((notification) => (
             <div key={notification.id} className="notification-card">
               <div className="notification-header">
-                <h3>{notification.subject}</h3>
+                <h3>
+                  {notification.notification_type === 'SMS' ? '📱 ' : '📧 '}
+                  {notification.subject || `${notification.notification_type} Notification`}
+                </h3>
                 <span className={getStatusBadgeClass(notification.status)}>
                   {notification.status}
                 </span>
               </div>
               <p className="notification-body">{notification.body}</p>
               <div className="notification-meta">
+                <div>
+                  <strong>Type:</strong> {notification.notification_type}
+                </div>
                 <div>
                   <strong>Recipients:</strong> {notification.customer_ids.length} customer(s)
                 </div>

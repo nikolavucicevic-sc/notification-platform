@@ -1,0 +1,17 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/sms/send"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"message\": \"SMS sent successfully\", \"sms_id\": \"{{randomValue type='UUID'}}\"}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

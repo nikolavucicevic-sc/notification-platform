@@ -1,5 +1,6 @@
 export enum NotificationType {
-  EMAIL = 'EMAIL'
+  EMAIL = 'EMAIL',
+  SMS = 'SMS'
 }
 
 export enum NotificationStatus {
@@ -11,7 +12,7 @@ export enum NotificationStatus {
 
 export interface NotificationCreate {
   notification_type: NotificationType;
-  subject: string;
+  subject?: string;  // Optional - required for EMAIL, not used for SMS
   body: string;
   customer_ids: string[];
 }
@@ -19,7 +20,7 @@ export interface NotificationCreate {
 export interface Notification {
   id: string;
   notification_type: NotificationType;
-  subject: string;
+  subject?: string;
   body: string;
   customer_ids: string[];
   status: NotificationStatus;
