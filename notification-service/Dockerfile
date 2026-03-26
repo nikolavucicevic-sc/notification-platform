@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app ./app
+COPY create_admin.py .
 
 # Ensure Python outputs are not buffered
 ENV PYTHONUNBUFFERED=1

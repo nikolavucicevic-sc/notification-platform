@@ -25,10 +25,13 @@ def create_admin_user():
             return
 
         # Create admin user
+        password = "admin123"
+        hashed_password = get_password_hash(password)
+
         admin = User(
             email="admin@notification-platform.com",
             username="admin",
-            hashed_password=get_password_hash("admin123"),  # Change this password!
+            hashed_password=hashed_password,
             full_name="System Administrator",
             role=UserRole.ADMIN,
             is_active=True

@@ -8,7 +8,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
+# from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 
 def setup_tracing(app, service_name: str = "notification-service"):
@@ -42,8 +42,8 @@ def setup_tracing(app, service_name: str = "notification-service"):
     # Instrument FastAPI
     FastAPIInstrumentor.instrument_app(app)
 
-    # Instrument requests library for outbound HTTP calls
-    RequestsInstrumentor().instrument()
+    # Instrument requests library for outbound HTTP calls (optional)
+    # RequestsInstrumentor().instrument()
 
     print(f"✅ OpenTelemetry tracing configured for {service_name}")
     print(f"   Traces will be exported to Jaeger at jaeger:6831")
