@@ -5,20 +5,40 @@ import { CustomerDashboard } from './components/CustomerDashboard';
 import { SchedulerUI } from './components/SchedulerUI';
 import { TemplateManager } from './components/TemplateManager';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
+import { Login } from './components/Login';
+import { AdminDashboard } from './components/AdminDashboard';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import './App.css';
 
-type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates' | 'monitoring';
+type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates' | 'monitoring' | 'admin';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, isAdmin, logout, loading } = useAuth();
 
   const handleNotificationSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="app">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="app">
@@ -28,9 +48,18 @@ function AppContent() {
             <h1>📢 Notification Platform</h1>
             <p>Send and track notifications to your customers</p>
           </div>
-          <button onClick={toggleTheme} className="theme-toggle" title="Toggle theme">
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+          <div className="header-right">
+            <div className="user-info">
+              <span className="user-name">{user?.username}</span>
+              <span className={`user-role role-${user?.role.toLowerCase()}`}>{user?.role}</span>
+            </div>
+            <button onClick={toggleTheme} className="theme-toggle" title="Toggle theme">
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+            <button onClick={logout} className="logout-button" title="Logout">
+              🚪 Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -65,6 +94,14 @@ function AppContent() {
         >
           🔧 Monitoring
         </button>
+        {isAdmin && (
+          <button
+            className={`tab-button ${activeTab === 'admin' ? 'active' : ''}`}
+            onClick={() => setActiveTab('admin')}
+          >
+            👑 Admin
+          </button>
+        )}
       </nav>
 
       <div className="app-content">
@@ -102,6 +139,12 @@ function AppContent() {
             <MonitoringDashboard />
           </div>
         )}
+
+        {activeTab === 'admin' && isAdmin && (
+          <div className="single-panel-view">
+            <AdminDashboard />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -110,30 +153,32 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AppContent />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: 'var(--card-bg)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border)',
-          },
-          success: {
-            iconTheme: {
-              primary: 'var(--success)',
-              secondary: '#fff',
+      <AuthProvider>
+        <AppContent />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: 'var(--card-bg)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
             },
-          },
-          error: {
-            iconTheme: {
-              primary: 'var(--danger)',
-              secondary: '#fff',
+            success: {
+              iconTheme: {
+                primary: 'var(--success)',
+                secondary: '#fff',
+              },
             },
-          },
-        }}
-      />
+            error: {
+              iconTheme: {
+                primary: 'var(--danger)',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

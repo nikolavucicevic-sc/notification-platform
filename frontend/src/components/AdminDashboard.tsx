@@ -1,0 +1,400 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import './AdminDashboard.css';
+
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string | null;
+  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+interface APIKey {
+  id: string;
+  key_name: string;
+  key_prefix: string;
+  is_active: boolean;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+}
+
+interface AuditLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  details: any;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export function AdminDashboard() {
+  const { user: currentUser, isAdmin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'users' | 'api-keys' | 'audit'>('users');
+
+  // Users
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // API Keys
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [showNewKeyModal, setShowNewKeyModal] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyDays, setNewKeyDays] = useState('');
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+
+  // Audit Logs
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'api-keys') fetchAPIKeys();
+    if (activeTab === 'audit') fetchAuditLogs();
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await axios.get('/api/auth/users');
+      setUsers(response.data);
+    } catch (error: any) {
+      toast.error('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const fetchAPIKeys = async () => {
+    setLoadingKeys(true);
+    try {
+      const response = await axios.get('/api/auth/api-keys');
+      setApiKeys(response.data);
+    } catch (error: any) {
+      toast.error('Failed to load API keys');
+    } finally {
+      setLoadingKeys(false);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    setLoadingAudit(true);
+    try {
+      const response = await axios.get('/api/auth/audit-logs?limit=100');
+      setAuditLogs(response.data);
+    } catch (error: any) {
+      toast.error('Failed to load audit logs');
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const createAPIKey = async () => {
+    try {
+      const payload: any = { key_name: newKeyName };
+      if (newKeyDays) {
+        payload.expires_in_days = parseInt(newKeyDays);
+      }
+
+      const response = await axios.post('/api/auth/api-keys', payload);
+      setCreatedKey(response.data.api_key);
+      toast.success('API key created! Save it now - it won\'t be shown again!');
+      fetchAPIKeys();
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to create API key');
+    }
+  };
+
+  const deleteAPIKey = async (keyId: string) => {
+    if (!confirm('Are you sure you want to delete this API key?')) return;
+
+    try {
+      await axios.delete(`/api/auth/api-keys/${keyId}`);
+      toast.success('API key deleted');
+      fetchAPIKeys();
+    } catch (error: any) {
+      toast.error('Failed to delete API key');
+    }
+  };
+
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case 'ADMIN': return 'role-badge role-admin';
+      case 'OPERATOR': return 'role-badge role-operator';
+      case 'VIEWER': return 'role-badge role-viewer';
+      default: return 'role-badge';
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString();
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-dashboard">
+        <div className="access-denied">
+          <h2>🔒 Access Denied</h2>
+          <p>Admin access required to view this page.</p>
+          <p>Your role: <span className={getRoleBadgeClass(currentUser?.role || '')}>{currentUser?.role}</span></p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-dashboard">
+      <div className="admin-header">
+        <h2>👑 Admin Dashboard</h2>
+        <p>Manage users, API keys, and view audit logs</p>
+      </div>
+
+      <div className="admin-tabs">
+        <button
+          className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          👥 Users
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
+          onClick={() => setActiveTab('api-keys')}
+        >
+          🔑 API Keys
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'audit' ? 'active' : ''}`}
+          onClick={() => setActiveTab('audit')}
+        >
+          📋 Audit Logs
+        </button>
+      </div>
+
+      <div className="admin-content">
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="users-section">
+            <div className="section-header">
+              <h3>User Management</h3>
+              <button className="btn-primary">+ Add User</button>
+            </div>
+
+            {loadingUsers ? (
+              <p>Loading users...</p>
+            ) : (
+              <div className="users-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Full Name</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Last Login</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td><strong>{user.username}</strong></td>
+                        <td>{user.email}</td>
+                        <td>{user.full_name || '-'}</td>
+                        <td><span className={getRoleBadgeClass(user.role)}>{user.role}</span></td>
+                        <td>
+                          <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
+                            {user.is_active ? '✓ Active' : '✗ Inactive'}
+                          </span>
+                        </td>
+                        <td>{formatDate(user.last_login)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* API Keys Tab */}
+        {activeTab === 'api-keys' && (
+          <div className="api-keys-section">
+            <div className="section-header">
+              <h3>API Key Management</h3>
+              <button className="btn-primary" onClick={() => setShowNewKeyModal(true)}>
+                + Create API Key
+              </button>
+            </div>
+
+            {showNewKeyModal && (
+              <div className="modal-overlay" onClick={() => {
+                setShowNewKeyModal(false);
+                setCreatedKey(null);
+              }}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  {createdKey ? (
+                    <div className="key-created">
+                      <h3>✅ API Key Created!</h3>
+                      <p className="warning-text">
+                        ⚠️ Save this key now! It won't be shown again.
+                      </p>
+                      <div className="api-key-display">
+                        <code>{createdKey}</code>
+                        <button onClick={() => {
+                          navigator.clipboard.writeText(createdKey);
+                          toast.success('Copied to clipboard!');
+                        }}>
+                          📋 Copy
+                        </button>
+                      </div>
+                      <button className="btn-primary" onClick={() => {
+                        setShowNewKeyModal(false);
+                        setCreatedKey(null);
+                        setNewKeyName('');
+                        setNewKeyDays('');
+                      }}>
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="create-key-form">
+                      <h3>Create New API Key</h3>
+                      <div className="form-group">
+                        <label>Key Name</label>
+                        <input
+                          type="text"
+                          value={newKeyName}
+                          onChange={(e) => setNewKeyName(e.target.value)}
+                          placeholder="e.g., Production API"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Expires In (days, optional)</label>
+                        <input
+                          type="number"
+                          value={newKeyDays}
+                          onChange={(e) => setNewKeyDays(e.target.value)}
+                          placeholder="Leave empty for no expiration"
+                        />
+                      </div>
+                      <div className="modal-actions">
+                        <button className="btn-secondary" onClick={() => setShowNewKeyModal(false)}>
+                          Cancel
+                        </button>
+                        <button className="btn-primary" onClick={createAPIKey} disabled={!newKeyName}>
+                          Create Key
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {loadingKeys ? (
+              <p>Loading API keys...</p>
+            ) : apiKeys.length === 0 ? (
+              <div className="empty-state">
+                <p>No API keys yet. Create one to get started!</p>
+              </div>
+            ) : (
+              <div className="keys-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Prefix</th>
+                      <th>Created</th>
+                      <th>Last Used</th>
+                      <th>Expires</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiKeys.map((key) => (
+                      <tr key={key.id}>
+                        <td><strong>{key.key_name}</strong></td>
+                        <td><code>{key.key_prefix}...</code></td>
+                        <td>{formatDate(key.created_at)}</td>
+                        <td>{formatDate(key.last_used_at)}</td>
+                        <td>{formatDate(key.expires_at)}</td>
+                        <td>
+                          <button className="btn-danger-small" onClick={() => deleteAPIKey(key.id)}>
+                            🗑️ Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Audit Logs Tab */}
+        {activeTab === 'audit' && (
+          <div className="audit-section">
+            <div className="section-header">
+              <h3>Audit Logs (Last 100)</h3>
+              <button className="btn-secondary" onClick={fetchAuditLogs}>
+                🔄 Refresh
+              </button>
+            </div>
+
+            {loadingAudit ? (
+              <p>Loading audit logs...</p>
+            ) : (
+              <div className="audit-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Action</th>
+                      <th>Resource</th>
+                      <th>IP Address</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td>{formatDate(log.created_at)}</td>
+                        <td><code>{log.action}</code></td>
+                        <td>
+                          {log.resource_type && (
+                            <span>
+                              {log.resource_type}
+                              {log.resource_id && <><br/><small>{log.resource_id.substring(0, 8)}...</small></>}
+                            </span>
+                          )}
+                        </td>
+                        <td>{log.ip_address || '-'}</td>
+                        <td>
+                          {log.details && (
+                            <small><pre>{JSON.stringify(log.details, null, 2)}</pre></small>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

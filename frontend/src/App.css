@@ -17,6 +17,8 @@
   --hover-bg: #f0f0f0;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   --primary: #667eea;
+  --primary-rgb: 102, 126, 234;
+  --primary-dark: #5568d3;
   --success: #28a745;
   --danger: #dc3545;
   --warning: #ffc107;
@@ -36,6 +38,8 @@
   --hover-bg: #374151;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   --primary: #818cf8;
+  --primary-rgb: 129, 140, 248;
+  --primary-dark: #6366f1;
   --success: #34d399;
   --danger: #f87171;
   --warning: #fbbf24;
@@ -84,6 +88,52 @@ body {
   font-size: 1.1rem;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 2px solid var(--border);
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.user-role {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-role.role-admin {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+}
+
+.user-role.role-operator {
+  background: rgba(59, 130, 246, 0.1);
+  color: rgb(59, 130, 246);
+}
+
+.user-role.role-viewer {
+  background: rgba(156, 163, 175, 0.1);
+  color: rgb(156, 163, 175);
+}
+
 .theme-toggle {
   width: auto;
   padding: 0.75rem 1rem;
@@ -97,6 +147,25 @@ body {
 .theme-toggle:hover {
   transform: scale(1.1);
   box-shadow: var(--shadow);
+}
+
+.logout-button {
+  width: auto;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background: rgb(239, 68, 68);
+  color: white;
+  border-color: rgb(239, 68, 68);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* Tab Navigation */
