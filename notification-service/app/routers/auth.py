@@ -223,6 +223,46 @@ async def update_user(
     return user
 
 
+@router.put("/users/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: str,
+    role_data: dict,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Update a user's role (Admin only).
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Validate role
+    role_str = role_data.get('role')
+    if role_str not in ['ADMIN', 'OPERATOR', 'VIEWER']:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    old_role = user.role.value
+    user.role = UserRole[role_str]
+
+    db.commit()
+    db.refresh(user)
+
+    # Audit log
+    await create_audit_log(
+        db=db,
+        action="user.role_update",
+        user=admin,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"old_role": old_role, "new_role": role_str},
+        request=request
+    )
+
+    return user
+
+
 @router.post("/api-keys", response_model=APIKeyCreateResponse, status_code=201)
 async def create_api_key(
     key_data: APIKeyCreate,

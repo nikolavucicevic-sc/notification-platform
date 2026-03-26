@@ -127,6 +127,18 @@ export function AdminDashboard() {
     }
   };
 
+  const updateUserRole = async (userId: string, newRole: 'ADMIN' | 'OPERATOR' | 'VIEWER') => {
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+
+    try {
+      await axios.put(`/api/auth/users/${userId}/role`, { role: newRole });
+      toast.success('User role updated successfully');
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update user role');
+    }
+  };
+
   const getRoleBadgeClass = (role: string) => {
     switch (role) {
       case 'ADMIN': return 'role-badge role-admin';
@@ -203,6 +215,7 @@ export function AdminDashboard() {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Last Login</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -218,6 +231,22 @@ export function AdminDashboard() {
                           </span>
                         </td>
                         <td>{formatDate(user.last_login)}</td>
+                        <td>
+                          {user.id !== currentUser?.id && (
+                            <select
+                              className="role-select"
+                              value={user.role}
+                              onChange={(e) => updateUserRole(user.id, e.target.value as 'ADMIN' | 'OPERATOR' | 'VIEWER')}
+                            >
+                              <option value="VIEWER">VIEWER</option>
+                              <option value="OPERATOR">OPERATOR</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          )}
+                          {user.id === currentUser?.id && (
+                            <span className="text-muted">You</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
