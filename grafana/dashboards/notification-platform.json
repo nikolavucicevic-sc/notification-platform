@@ -1,0 +1,78 @@
+{
+  "dashboard": {
+    "title": "Notification Platform Dashboard",
+    "tags": ["notifications", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Requests per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(api_requests_total[1m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Notifications Sent",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(notifications_sent_total{status=\"success\"}[5m])",
+            "legendFormat": "{{channel}} - Success"
+          },
+          {
+            "expr": "rate(notifications_sent_total{status=\"failed\"}[5m])",
+            "legendFormat": "{{channel}} - Failed"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "Queue Depths",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "redis_queue_depth",
+            "legendFormat": "{{queue_name}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 4,
+        "title": "DLQ Message Count",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "dlq_message_count",
+            "legendFormat": "{{channel}} DLQ"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}
+      },
+      {
+        "id": 5,
+        "title": "API Request Duration (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8}
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    }
+  }
+}
