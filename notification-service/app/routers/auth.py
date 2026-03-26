@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User, APIKey, AuditLog
+from app.models.user import UserRole
 from app.schemas.user import (
     UserLogin,
     UserCreate,
@@ -37,11 +38,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def register(
     user_data: UserCreate,
     request: Request,
-    db: Session = Depends(get_db),
-    admin: User = Depends(require_admin)  # Only admins can create users
+    db: Session = Depends(get_db)
 ):
     """
-    Register a new user (Admin only).
+    Public self-registration endpoint. Creates new user with VIEWER role.
     """
     # Check if username already exists
     if db.query(User).filter(User.username == user_data.username).first():
@@ -57,14 +57,65 @@ async def register(
             detail="Email already registered"
         )
 
-    # Create new user
+    # Create new user with VIEWER role (ignore any role from request for security)
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         email=user_data.email,
         username=user_data.username,
         hashed_password=hashed_password,
         full_name=user_data.full_name,
-        role=user_data.role
+        role=UserRole.VIEWER  # Always VIEWER for self-registration
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Audit log (no admin user for self-registration)
+    await log_user_created(
+        db=db,
+        admin_user=None,
+        new_user_id=str(new_user.id),
+        new_user_email=new_user.email,
+        new_user_role=new_user.role.value,
+        request=request
+    )
+
+    return new_user
+
+
+@router.post("/users", response_model=UserResponse, status_code=201)
+async def create_user_admin(
+    user_data: UserCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Create a new user (Admin only). Allows specifying role.
+    """
+    # Check if username already exists
+    if db.query(User).filter(User.username == user_data.username).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+
+    # Check if email already exists
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
+    # Create new user with specified role
+    hashed_password = get_password_hash(user_data.password)
+    new_user = User(
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=hashed_password,
+        full_name=user_data.full_name,
+        role=user_data.role  # Admin can specify role
     )
 
     db.add(new_user)

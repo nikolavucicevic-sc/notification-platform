@@ -155,13 +155,13 @@ async def log_api_key_created(
 
 async def log_user_created(
     db: Session,
-    admin_user: User,
+    admin_user: Optional[User],
     new_user_id: str,
     new_user_email: str,
     new_user_role: str,
     request: Request
 ):
-    """Log user creation."""
+    """Log user creation. admin_user can be None for self-registration."""
     await create_audit_log(
         db=db,
         action="user.create",
