@@ -16,5 +16,9 @@ ENV PYTHONUNBUFFERED=1
 # Expose port
 EXPOSE 8002
 
+# Create a startup script that runs admin creation then starts the server
+RUN echo '#!/bin/bash\npython create_admin.py || true\nexec uvicorn app.main:app --host 0.0.0.0 --port 8002' > /app/start.sh && \
+    chmod +x /app/start.sh
+
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["/app/start.sh"]
