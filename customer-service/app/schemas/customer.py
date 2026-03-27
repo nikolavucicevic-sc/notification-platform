@@ -9,7 +9,7 @@ class CustomerCreate(BaseModel):
     email: EmailStr  # Validates email format
     phone_number: str | None = Field(
         None,
-        regex=r"^\+[1-9]\d{1,14}$",  # E.164 format: +1234567890
+        pattern=r"^\+[1-9]\d{1,14}$",  # E.164 format: +1234567890
         description="Phone number in E.164 format (e.g., +1234567890)"
     )
     first_name: str = Field(..., min_length=1, max_length=100)
@@ -40,7 +40,7 @@ class CustomerUpdate(BaseModel):
     email: EmailStr | None = None
     phone_number: str | None = Field(
         None,
-        regex=r"^\+[1-9]\d{1,14}$",
+        pattern=r"^\+[1-9]\d{1,14}$",
         description="Phone number in E.164 format"
     )
     first_name: str | None = Field(None, min_length=1, max_length=100)
