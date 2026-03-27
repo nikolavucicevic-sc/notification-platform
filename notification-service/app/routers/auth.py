@@ -28,7 +28,8 @@ from app.auth import (
 from app.audit import (
     log_user_login,
     log_api_key_created,
-    log_user_created
+    log_user_created,
+    create_audit_log
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
