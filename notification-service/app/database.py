@@ -32,16 +32,25 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Create engine with optimized connection pooling
-engine = create_engine(
-    settings.database_url,
-    pool_size=settings.db_pool_size,         # Number of persistent connections
-    max_overflow=settings.db_max_overflow,   # Additional connections when pool is full
-    pool_timeout=settings.db_pool_timeout,   # Seconds to wait for available connection
-    pool_recycle=settings.db_pool_recycle,   # Recycle connections after 1 hour
-    pool_pre_ping=True,                       # Verify connection health before use
-    echo_pool=settings.environment == "development",  # Log pool events in dev
-)
+# Create engine with optimized connection pooling (only for PostgreSQL)
+# SQLite doesn't support pooling, so we only add pool arguments for PostgreSQL
+if settings.database_url.startswith("sqlite"):
+    # SQLite: Simple engine for testing
+    engine = create_engine(
+        settings.database_url,
+        connect_args={"check_same_thread": False}  # Allow SQLite in multi-threaded tests
+    )
+else:
+    # PostgreSQL: Production engine with connection pooling
+    engine = create_engine(
+        settings.database_url,
+        pool_size=settings.db_pool_size,         # Number of persistent connections
+        max_overflow=settings.db_max_overflow,   # Additional connections when pool is full
+        pool_timeout=settings.db_pool_timeout,   # Seconds to wait for available connection
+        pool_recycle=settings.db_pool_recycle,   # Recycle connections after 1 hour
+        pool_pre_ping=True,                       # Verify connection health before use
+        echo_pool=settings.environment == "development",  # Log pool events in dev
+    )
 
 
 # Add connection pool listeners for monitoring
