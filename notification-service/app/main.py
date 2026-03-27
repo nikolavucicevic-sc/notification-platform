@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import signal
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -11,25 +13,73 @@ from app.db_utils import wait_for_db
 from app.redis_utils import wait_for_redis
 from app.metrics import metrics_endpoint, MetricsMiddleware
 from app.tracing import setup_tracing
+from app.logging_config import configure_logging, get_logger
+from app.middleware import RequestIDMiddleware, UserContextMiddleware
+
+# Configure structured logging
+configure_logging(
+    log_level=settings.log_level,
+    json_logs=settings.json_logs
+)
+logger = get_logger(__name__)
 
 # Wait for database to be ready before creating tables
 wait_for_db(settings.database_url)
 
-Base.metadata.create_all(bind=engine)
+# TODO: Replace with Alembic migrations in production
+# For now, keep create_all for development
+if settings.environment == "development":
+    Base.metadata.create_all(bind=engine)
+    logger.info("database_tables_created", environment="development")
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+# Global shutdown event
+shutdown_event = asyncio.Event()
+
+
+def handle_shutdown_signal(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info("shutdown_signal_received", signal=signum)
+    shutdown_event.set()
+
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, handle_shutdown_signal)
+signal.signal(signal.SIGINT, handle_shutdown_signal)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Wait for Redis to be ready
+    # Startup
     wait_for_redis(settings.redis_url)
-    print("✅ Notification Service started")
-    print("📊 Prometheus metrics available at /metrics")
-    print("🔐 Authentication enabled - JWT and API keys supported")
+    logger.info(
+        "service_started",
+        environment=settings.environment,
+        port=settings.app_port,
+        log_level=settings.log_level,
+        pool_size=settings.db_pool_size
+    )
+    logger.info("metrics_available", endpoint="/metrics")
+    logger.info("authentication_enabled", methods=["JWT", "API_KEY"])
+
     yield
-    print("Notification Service stopped")
+
+    # Graceful shutdown
+    logger.info("service_shutting_down")
+
+    # Wait for in-flight requests to complete (max 30 seconds)
+    try:
+        await asyncio.wait_for(shutdown_event.wait(), timeout=30.0)
+    except asyncio.TimeoutError:
+        logger.warning("shutdown_timeout", message="Some requests may have been interrupted")
+
+    # Dispose database connections
+    logger.info("closing_database_connections")
+    engine.dispose()
+
+    logger.info("service_stopped")
 
 
 app = FastAPI(
@@ -43,10 +93,17 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Add custom middleware (order matters!)
+app.add_middleware(RequestIDMiddleware)  # Must be first for request tracing
+app.add_middleware(UserContextMiddleware)  # Add user context to logs
+
 # Add CORS middleware
+cors_origins = ["*"] if settings.environment != "production" else [
+    "https://yourdomain.com",  # Replace with actual production domain
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
