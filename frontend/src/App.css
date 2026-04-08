@@ -543,6 +543,28 @@ button:disabled {
   display: inline-block;
 }
 
+.poll-interval-input {
+  width: 48px;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--form-bg);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  text-align: center;
+}
+
+.poll-interval-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.poll-interval-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }

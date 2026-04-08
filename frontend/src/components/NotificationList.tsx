@@ -13,7 +13,23 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pollingEnabled, setPollingEnabled] = useState(true);
+  const [pollSeconds, setPollSeconds] = useState(5);
+  const [pollInput, setPollInput] = useState('5');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const handlePollInputChange = (value: string) => {
+    setPollInput(value);
+    const n = parseInt(value);
+    if (!isNaN(n) && n >= 5) setPollSeconds(n);
+  };
+
+  const handlePollInputBlur = () => {
+    const n = parseInt(pollInput);
+    if (isNaN(n) || n < 5) {
+      setPollSeconds(5);
+      setPollInput('5');
+    }
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
@@ -60,8 +76,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
     }
   };
 
-  // Poll every 5 seconds
-  usePolling(fetchNotifications, 5000, pollingEnabled);
+  usePolling(fetchNotifications, pollSeconds * 1000, pollingEnabled);
 
   // Also fetch when refreshTrigger changes (manual refresh)
   useEffect(() => {
@@ -103,9 +118,23 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
                 checked={pollingEnabled}
                 onChange={(e) => setPollingEnabled(e.target.checked)}
               />
-              Auto-refresh (5s)
+              Auto-refresh
             </label>
-            {pollingEnabled && <span className="polling-dot" />}
+            {pollingEnabled && (
+              <>
+                <span className="polling-dot" />
+                <input
+                  type="number"
+                  className="poll-interval-input"
+                  value={pollInput}
+                  min={5}
+                  onChange={(e) => handlePollInputChange(e.target.value)}
+                  onBlur={handlePollInputBlur}
+                  title="Refresh interval (min 5s)"
+                />
+                <span className="poll-interval-label">s</span>
+              </>
+            )}
           </div>
         </div>
         <button onClick={fetchNotifications} className="refresh-button" disabled={loading}>
