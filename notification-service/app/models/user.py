@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, Boolean
+from sqlalchemy import Column, String, DateTime, Enum, Boolean, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 import uuid
@@ -26,3 +26,11 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime(timezone=True), nullable=True)
+
+    # Sending limits (None = unlimited)
+    email_limit = Column(Integer, nullable=True, default=None)
+    sms_limit = Column(Integer, nullable=True, default=None)
+
+    # Running counters
+    email_sent = Column(Integer, nullable=False, default=0)
+    sms_sent = Column(Integer, nullable=False, default=0)

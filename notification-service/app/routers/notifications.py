@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.database import get_db
-from app.models.notification import Notification, NotificationStatus
+from app.models.notification import Notification, NotificationStatus, NotificationType
 from app.models.user import User
 from app.schemas.notification import NotificationCreate, NotificationResponse
 from app.messaging.publisher import publish_email_request
@@ -30,6 +30,27 @@ async def create_notification(
     Rate Limit: 10 requests per minute per IP address.
     Requires: OPERATOR or ADMIN role
     """
+    recipient_count = len(notification.customer_ids)
+    channel = notification.notification_type
+
+    # Enforce per-user sending limits (skip for ADMIN)
+    from app.models.user import UserRole
+    if current_user.role != UserRole.ADMIN:
+        if channel == NotificationType.EMAIL and current_user.email_limit is not None:
+            if current_user.email_sent + recipient_count > current_user.email_limit:
+                remaining = max(0, current_user.email_limit - current_user.email_sent)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Email limit reached. Limit: {current_user.email_limit}, sent: {current_user.email_sent}, remaining: {remaining}"
+                )
+        if channel == NotificationType.SMS and current_user.sms_limit is not None:
+            if current_user.sms_sent + recipient_count > current_user.sms_limit:
+                remaining = max(0, current_user.sms_limit - current_user.sms_sent)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"SMS limit reached. Limit: {current_user.sms_limit}, sent: {current_user.sms_sent}, remaining: {remaining}"
+                )
+
     db_notification = Notification(
         notification_type=notification.notification_type,
         subject=notification.subject,
@@ -44,6 +65,13 @@ async def create_notification(
     await publish_email_request(db_notification)
 
     db_notification.status = NotificationStatus.PROCESSING
+
+    # Increment usage counters
+    if channel == NotificationType.EMAIL:
+        current_user.email_sent = (current_user.email_sent or 0) + recipient_count
+    else:
+        current_user.sms_sent = (current_user.sms_sent or 0) + recipient_count
+
     db.commit()
     db.refresh(db_notification)
 
@@ -53,7 +81,7 @@ async def create_notification(
         user=current_user,
         notification_id=str(db_notification.id),
         notification_type=db_notification.notification_type.value,
-        customer_count=len(notification.customer_ids),
+        customer_count=recipient_count,
         request=request
     )
 

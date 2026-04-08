@@ -9,13 +9,28 @@ interface User {
   full_name: string | null;
   role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
   is_active: boolean;
+  email_limit: number | null;
+  sms_limit: number | null;
+  email_sent: number;
+  sms_sent: number;
+}
+
+export interface UsageStats {
+  email_limit: number | null;
+  sms_limit: number | null;
+  email_sent: number;
+  sms_sent: number;
+  email_remaining: number | null;
+  sms_remaining: number | null;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  usage: UsageStats | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUsage: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isOperatorOrAdmin: boolean;
@@ -27,6 +42,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Load token from localStorage on mount
@@ -58,9 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       setUser(response.data);
+      await fetchUsage(authToken);
     } catch (error) {
       console.error('Failed to fetch current user:', error);
-      // Token might be invalid, clear it
       localStorage.removeItem('auth_token');
       setToken(null);
       setUser(null);
@@ -69,20 +85,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchUsage = async (authToken?: string) => {
+    try {
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+      const response = await axios.get('/api/auth/users/me/usage', { headers });
+      setUsage(response.data);
+    } catch (error) {
+      console.error('Failed to fetch usage stats:', error);
+    }
+  };
+
+  const refreshUsage = async () => {
+    await fetchUsage();
+  };
+
   const login = async (username: string, password: string) => {
     try {
-      const response = await axios.post('/api/auth/login', {
-        username,
-        password
-      });
-
+      const response = await axios.post('/api/auth/login', { username, password });
       const { access_token } = response.data;
       setToken(access_token);
       localStorage.setItem('auth_token', access_token);
-
-      // Fetch user info
       await fetchCurrentUser(access_token);
-
       toast.success('Login successful!');
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -94,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
+    setUsage(null);
     localStorage.removeItem('auth_token');
     toast.success('Logged out successfully');
   };
@@ -101,8 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     user,
     token,
+    usage,
     login,
     logout,
+    refreshUsage,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'ADMIN',
     isOperatorOrAdmin: user?.role === 'ADMIN' || user?.role === 'OPERATOR',

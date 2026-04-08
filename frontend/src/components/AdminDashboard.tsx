@@ -13,6 +13,10 @@ interface User {
   is_active: boolean;
   created_at: string;
   last_login: string | null;
+  email_limit: number | null;
+  sms_limit: number | null;
+  email_sent: number;
+  sms_sent: number;
 }
 
 interface APIKey {
@@ -39,11 +43,14 @@ interface AuditLog {
 
 export function AdminDashboard() {
   const { user: currentUser, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<'users' | 'api-keys' | 'audit'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'limits' | 'api-keys' | 'audit'>('users');
 
   // Users
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Limits editing state: userId -> { email_limit, sms_limit }
+  const [editingLimits, setEditingLimits] = useState<Record<string, { email: string; sms: string }>>({});
 
   // API Keys
   const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
@@ -59,6 +66,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'limits') fetchUsers();
     if (activeTab === 'api-keys') fetchAPIKeys();
     if (activeTab === 'audit') fetchAuditLogs();
   }, [activeTab]);
@@ -68,7 +76,16 @@ export function AdminDashboard() {
     try {
       const response = await axios.get('/api/auth/users');
       setUsers(response.data);
-    } catch (error: any) {
+      // Init editing state for limits tab
+      const init: Record<string, { email: string; sms: string }> = {};
+      response.data.forEach((u: User) => {
+        init[u.id] = {
+          email: u.email_limit != null ? String(u.email_limit) : '',
+          sms: u.sms_limit != null ? String(u.sms_limit) : '',
+        };
+      });
+      setEditingLimits(init);
+    } catch {
       toast.error('Failed to load users');
     } finally {
       setLoadingUsers(false);
@@ -80,7 +97,7 @@ export function AdminDashboard() {
     try {
       const response = await axios.get('/api/auth/api-keys');
       setApiKeys(response.data);
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to load API keys');
     } finally {
       setLoadingKeys(false);
@@ -92,7 +109,7 @@ export function AdminDashboard() {
     try {
       const response = await axios.get('/api/auth/audit-logs?limit=100');
       setAuditLogs(response.data);
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to load audit logs');
     } finally {
       setLoadingAudit(false);
@@ -102,13 +119,10 @@ export function AdminDashboard() {
   const createAPIKey = async () => {
     try {
       const payload: any = { key_name: newKeyName };
-      if (newKeyDays) {
-        payload.expires_in_days = parseInt(newKeyDays);
-      }
-
+      if (newKeyDays) payload.expires_in_days = parseInt(newKeyDays);
       const response = await axios.post('/api/auth/api-keys', payload);
       setCreatedKey(response.data.api_key);
-      toast.success('API key created! Save it now - it won\'t be shown again!');
+      toast.success("API key created! Save it now - it won't be shown again!");
       fetchAPIKeys();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to create API key');
@@ -117,25 +131,38 @@ export function AdminDashboard() {
 
   const deleteAPIKey = async (keyId: string) => {
     if (!confirm('Are you sure you want to delete this API key?')) return;
-
     try {
       await axios.delete(`/api/auth/api-keys/${keyId}`);
       toast.success('API key deleted');
       fetchAPIKeys();
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to delete API key');
     }
   };
 
   const updateUserRole = async (userId: string, newRole: 'ADMIN' | 'OPERATOR' | 'VIEWER') => {
     if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
-
     try {
       await axios.put(`/api/auth/users/${userId}/role`, { role: newRole });
       toast.success('User role updated successfully');
       fetchUsers();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to update user role');
+    }
+  };
+
+  const saveLimits = async (userId: string) => {
+    const vals = editingLimits[userId];
+    const payload: any = {};
+    payload.email_limit = vals.email.trim() !== '' ? parseInt(vals.email) : null;
+    payload.sms_limit = vals.sms.trim() !== '' ? parseInt(vals.sms) : null;
+
+    try {
+      await axios.patch(`/api/auth/users/${userId}/limits`, payload);
+      toast.success('Limits updated');
+      fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to update limits');
     }
   };
 
@@ -169,28 +196,14 @@ export function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h2>Admin Dashboard</h2>
-        <p>Manage users, API keys, and view audit logs</p>
+        <p>Manage users, limits, API keys, and view audit logs</p>
       </div>
 
       <div className="admin-tabs">
-        <button
-          className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users
-        </button>
-        <button
-          className={`admin-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
-          onClick={() => setActiveTab('api-keys')}
-        >
-          API Keys
-        </button>
-        <button
-          className={`admin-tab ${activeTab === 'audit' ? 'active' : ''}`}
-          onClick={() => setActiveTab('audit')}
-        >
-          Audit Logs
-        </button>
+        <button className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>Users</button>
+        <button className={`admin-tab ${activeTab === 'limits' ? 'active' : ''}`} onClick={() => setActiveTab('limits')}>Usage &amp; Limits</button>
+        <button className={`admin-tab ${activeTab === 'api-keys' ? 'active' : ''}`} onClick={() => setActiveTab('api-keys')}>API Keys</button>
+        <button className={`admin-tab ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>Audit Logs</button>
       </div>
 
       <div className="admin-content">
@@ -232,7 +245,7 @@ export function AdminDashboard() {
                         </td>
                         <td>{formatDate(user.last_login)}</td>
                         <td>
-                          {user.id !== currentUser?.id && (
+                          {user.id !== currentUser?.id ? (
                             <select
                               className="role-select"
                               value={user.role}
@@ -242,10 +255,101 @@ export function AdminDashboard() {
                               <option value="OPERATOR">OPERATOR</option>
                               <option value="ADMIN">ADMIN</option>
                             </select>
-                          )}
-                          {user.id === currentUser?.id && (
+                          ) : (
                             <span className="text-muted">You</span>
                           )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Usage & Limits Tab */}
+        {activeTab === 'limits' && (
+          <div className="users-section">
+            <div className="section-header">
+              <h3>Usage &amp; Limits</h3>
+              <button className="btn-secondary" onClick={fetchUsers}>Refresh</button>
+            </div>
+            <p className="limits-hint">Set per-user sending limits. Leave blank for unlimited. Admins are never limited.</p>
+
+            {loadingUsers ? (
+              <p>Loading...</p>
+            ) : (
+              <div className="users-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Emails Sent</th>
+                      <th>Email Limit</th>
+                      <th>SMS Sent</th>
+                      <th>SMS Limit</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id}>
+                        <td><strong>{user.username}</strong></td>
+                        <td><span className={getRoleBadgeClass(user.role)}>{user.role}</span></td>
+                        <td>
+                          <span className="usage-count">{user.email_sent}</span>
+                          {user.email_limit != null && (
+                            <span className="usage-bar-wrap">
+                              <span
+                                className="usage-bar"
+                                style={{ width: `${Math.min(100, (user.email_sent / user.email_limit) * 100)}%`, background: user.email_sent >= user.email_limit ? 'var(--danger)' : 'var(--primary)' }}
+                              />
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <input
+                            className="limit-input"
+                            type="number"
+                            min="0"
+                            placeholder="Unlimited"
+                            value={editingLimits[user.id]?.email ?? ''}
+                            onChange={(e) => setEditingLimits(prev => ({
+                              ...prev,
+                              [user.id]: { ...prev[user.id], email: e.target.value }
+                            }))}
+                          />
+                        </td>
+                        <td>
+                          <span className="usage-count">{user.sms_sent}</span>
+                          {user.sms_limit != null && (
+                            <span className="usage-bar-wrap">
+                              <span
+                                className="usage-bar"
+                                style={{ width: `${Math.min(100, (user.sms_sent / user.sms_limit) * 100)}%`, background: user.sms_sent >= user.sms_limit ? 'var(--danger)' : 'var(--success)' }}
+                              />
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <input
+                            className="limit-input"
+                            type="number"
+                            min="0"
+                            placeholder="Unlimited"
+                            value={editingLimits[user.id]?.sms ?? ''}
+                            onChange={(e) => setEditingLimits(prev => ({
+                              ...prev,
+                              [user.id]: { ...prev[user.id], sms: e.target.value }
+                            }))}
+                          />
+                        </td>
+                        <td>
+                          <button className="btn-primary btn-small" onClick={() => saveLimits(user.id)}>
+                            Save
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -261,69 +365,36 @@ export function AdminDashboard() {
           <div className="api-keys-section">
             <div className="section-header">
               <h3>API Key Management</h3>
-              <button className="btn-primary" onClick={() => setShowNewKeyModal(true)}>
-                + Create API Key
-              </button>
+              <button className="btn-primary" onClick={() => setShowNewKeyModal(true)}>+ Create API Key</button>
             </div>
 
             {showNewKeyModal && (
-              <div className="modal-overlay" onClick={() => {
-                setShowNewKeyModal(false);
-                setCreatedKey(null);
-              }}>
+              <div className="modal-overlay" onClick={() => { setShowNewKeyModal(false); setCreatedKey(null); }}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                   {createdKey ? (
                     <div className="key-created">
                       <h3>API Key Created</h3>
-                      <p className="warning-text">
-                        Save this key now. It won't be shown again.
-                      </p>
+                      <p className="warning-text">Save this key now. It won't be shown again.</p>
                       <div className="api-key-display">
                         <code>{createdKey}</code>
-                        <button onClick={() => {
-                          navigator.clipboard.writeText(createdKey);
-                          toast.success('Copied to clipboard!');
-                        }}>
-                          Copy
-                        </button>
+                        <button onClick={() => { navigator.clipboard.writeText(createdKey); toast.success('Copied to clipboard!'); }}>Copy</button>
                       </div>
-                      <button className="btn-primary" onClick={() => {
-                        setShowNewKeyModal(false);
-                        setCreatedKey(null);
-                        setNewKeyName('');
-                        setNewKeyDays('');
-                      }}>
-                        Done
-                      </button>
+                      <button className="btn-primary" onClick={() => { setShowNewKeyModal(false); setCreatedKey(null); setNewKeyName(''); setNewKeyDays(''); }}>Done</button>
                     </div>
                   ) : (
                     <div className="create-key-form">
                       <h3>Create New API Key</h3>
                       <div className="form-group">
                         <label>Key Name</label>
-                        <input
-                          type="text"
-                          value={newKeyName}
-                          onChange={(e) => setNewKeyName(e.target.value)}
-                          placeholder="e.g., Production API"
-                        />
+                        <input type="text" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="e.g., Production API" />
                       </div>
                       <div className="form-group">
                         <label>Expires In (days, optional)</label>
-                        <input
-                          type="number"
-                          value={newKeyDays}
-                          onChange={(e) => setNewKeyDays(e.target.value)}
-                          placeholder="Leave empty for no expiration"
-                        />
+                        <input type="number" value={newKeyDays} onChange={(e) => setNewKeyDays(e.target.value)} placeholder="Leave empty for no expiration" />
                       </div>
                       <div className="modal-actions">
-                        <button className="btn-secondary" onClick={() => setShowNewKeyModal(false)}>
-                          Cancel
-                        </button>
-                        <button className="btn-primary" onClick={createAPIKey} disabled={!newKeyName}>
-                          Create Key
-                        </button>
+                        <button className="btn-secondary" onClick={() => setShowNewKeyModal(false)}>Cancel</button>
+                        <button className="btn-primary" onClick={createAPIKey} disabled={!newKeyName}>Create Key</button>
                       </div>
                     </div>
                   )}
@@ -331,23 +402,14 @@ export function AdminDashboard() {
               </div>
             )}
 
-            {loadingKeys ? (
-              <p>Loading API keys...</p>
-            ) : apiKeys.length === 0 ? (
-              <div className="empty-state">
-                <p>No API keys yet. Create one to get started!</p>
-              </div>
+            {loadingKeys ? <p>Loading API keys...</p> : apiKeys.length === 0 ? (
+              <div className="empty-state"><p>No API keys yet. Create one to get started!</p></div>
             ) : (
               <div className="keys-table">
                 <table>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Prefix</th>
-                      <th>Created</th>
-                      <th>Last Used</th>
-                      <th>Expires</th>
-                      <th>Actions</th>
+                      <th>Name</th><th>Prefix</th><th>Created</th><th>Last Used</th><th>Expires</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -358,11 +420,7 @@ export function AdminDashboard() {
                         <td>{formatDate(key.created_at)}</td>
                         <td>{formatDate(key.last_used_at)}</td>
                         <td>{formatDate(key.expires_at)}</td>
-                        <td>
-                          <button className="btn-danger-small" onClick={() => deleteAPIKey(key.id)}>
-                            Delete
-                          </button>
-                        </td>
+                        <td><button className="btn-danger-small" onClick={() => deleteAPIKey(key.id)}>Delete</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -377,24 +435,14 @@ export function AdminDashboard() {
           <div className="audit-section">
             <div className="section-header">
               <h3>Audit Logs (Last 100)</h3>
-              <button className="btn-secondary" onClick={fetchAuditLogs}>
-                Refresh
-              </button>
+              <button className="btn-secondary" onClick={fetchAuditLogs}>Refresh</button>
             </div>
 
-            {loadingAudit ? (
-              <p>Loading audit logs...</p>
-            ) : (
+            {loadingAudit ? <p>Loading audit logs...</p> : (
               <div className="audit-table">
                 <table>
                   <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Action</th>
-                      <th>Resource</th>
-                      <th>IP Address</th>
-                      <th>Details</th>
-                    </tr>
+                    <tr><th>Time</th><th>Action</th><th>Resource</th><th>IP Address</th><th>Details</th></tr>
                   </thead>
                   <tbody>
                     {auditLogs.map((log) => (
@@ -403,18 +451,11 @@ export function AdminDashboard() {
                         <td><code>{log.action}</code></td>
                         <td>
                           {log.resource_type && (
-                            <span>
-                              {log.resource_type}
-                              {log.resource_id && <><br/><small>{log.resource_id.substring(0, 8)}...</small></>}
-                            </span>
+                            <span>{log.resource_type}{log.resource_id && <><br/><small>{log.resource_id.substring(0, 8)}...</small></>}</span>
                           )}
                         </td>
                         <td>{log.ip_address || '-'}</td>
-                        <td>
-                          {log.details && (
-                            <small><pre>{JSON.stringify(log.details, null, 2)}</pre></small>
-                          )}
-                        </td>
+                        <td>{log.details && <small><pre>{JSON.stringify(log.details, null, 2)}</pre></small>}</td>
                       </tr>
                     ))}
                   </tbody>

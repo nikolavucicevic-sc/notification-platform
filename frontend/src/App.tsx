@@ -7,6 +7,7 @@ import { TemplateManager } from './components/TemplateManager';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
+import { UsageWidget } from './components/UsageWidget';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -107,10 +108,11 @@ function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const { theme, toggleTheme } = useTheme();
-  const { user, isAuthenticated, isAdmin, logout, loading } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout, loading, refreshUsage } = useAuth();
 
   const handleNotificationSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
+    refreshUsage();
   };
 
   if (loading) {
@@ -181,6 +183,7 @@ function AppContent() {
         {activeTab === 'notifications' && (
           <div className="notifications-view">
             <div className="form-section">
+              <UsageWidget />
               <NotificationForm onSuccess={handleNotificationSuccess} />
             </div>
             <div className="list-section">

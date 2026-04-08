@@ -15,7 +15,9 @@ from app.schemas.user import (
     APIKeyResponse,
     APIKeyCreateResponse,
     AuditLogResponse,
-    UserUpdate
+    UserUpdate,
+    UserLimitsUpdate,
+    UserUsageResponse,
 )
 from app.auth import (
     verify_password,
@@ -258,6 +260,71 @@ async def update_user_role(
         resource_type="user",
         resource_id=str(user.id),
         details={"old_role": old_role, "new_role": role_str},
+        request=request
+    )
+
+    return user
+
+
+@router.get("/users/me/usage", response_model=UserUsageResponse)
+async def get_my_usage(current_user: User = Depends(get_current_user)):
+    """
+    Get the current user's notification usage and limits.
+    Available to all authenticated users.
+    """
+    email_remaining = None
+    sms_remaining = None
+    if current_user.email_limit is not None:
+        email_remaining = max(0, current_user.email_limit - (current_user.email_sent or 0))
+    if current_user.sms_limit is not None:
+        sms_remaining = max(0, current_user.sms_limit - (current_user.sms_sent or 0))
+
+    return UserUsageResponse(
+        email_limit=current_user.email_limit,
+        sms_limit=current_user.sms_limit,
+        email_sent=current_user.email_sent or 0,
+        sms_sent=current_user.sms_sent or 0,
+        email_remaining=email_remaining,
+        sms_remaining=sms_remaining,
+    )
+
+
+@router.patch("/users/{user_id}/limits", response_model=UserResponse)
+async def update_user_limits(
+    user_id: str,
+    limits: UserLimitsUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Set email/SMS sending limits for a user (Admin only).
+    Pass null to remove a limit (unlimited).
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if limits.email_limit is not None:
+        user.email_limit = limits.email_limit
+    elif "email_limit" in limits.model_fields_set:
+        user.email_limit = None
+
+    if limits.sms_limit is not None:
+        user.sms_limit = limits.sms_limit
+    elif "sms_limit" in limits.model_fields_set:
+        user.sms_limit = None
+
+    db.commit()
+    db.refresh(user)
+
+    await create_audit_log(
+        db=db,
+        action="user.limits_update",
+        user=admin,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"email_limit": user.email_limit, "sms_limit": user.sms_limit},
         request=request
     )
 

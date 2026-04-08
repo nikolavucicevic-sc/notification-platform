@@ -27,6 +27,11 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class UserLimitsUpdate(BaseModel):
+    email_limit: Optional[int] = Field(None, ge=0)
+    sms_limit: Optional[int] = Field(None, ge=0)
+
+
 # Response schemas
 class Token(BaseModel):
     access_token: str
@@ -42,6 +47,22 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     last_login: Optional[datetime]
+    email_limit: Optional[int]
+    sms_limit: Optional[int]
+    email_sent: int
+    sms_sent: int
+
+    class Config:
+        from_attributes = True
+
+
+class UserUsageResponse(BaseModel):
+    email_limit: Optional[int]
+    sms_limit: Optional[int]
+    email_sent: int
+    sms_sent: int
+    email_remaining: Optional[int]  # None means unlimited
+    sms_remaining: Optional[int]
 
     class Config:
         from_attributes = True
