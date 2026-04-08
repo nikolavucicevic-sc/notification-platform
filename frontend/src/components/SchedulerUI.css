@@ -128,21 +128,37 @@
 }
 
 .customer-checkbox input[type="checkbox"] {
-  width: auto;
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
   cursor: pointer;
   flex-shrink: 0;
+  accent-color: var(--primary);
+  appearance: auto;
+  -webkit-appearance: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
 }
 
-.customer-checkbox > span:first-of-type {
+.customer-checkbox .customer-name-text {
   font-size: 0.875rem;
   color: var(--text-primary);
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .customer-email-small {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 0.5rem;
 }
 
 .schedule-list {

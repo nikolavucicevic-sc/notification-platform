@@ -340,7 +340,7 @@ body {
   margin-bottom: 1.125rem;
 }
 
-.form-group label {
+.form-group > label:not(.customer-checkbox):not(.template-toggle):not(.polling-indicator) {
   display: block;
   color: var(--text-secondary);
   font-weight: 500;
@@ -348,7 +348,7 @@ body {
   margin-bottom: 0.375rem;
 }
 
-.form-group input,
+.form-group input:not([type="checkbox"]):not([type="radio"]),
 .form-group textarea,
 .form-group select {
   width: 100%;
@@ -371,7 +371,7 @@ body {
   padding-right: 2.25rem;
 }
 
-.form-group input:focus,
+.form-group input:not([type="checkbox"]):not([type="radio"]):focus,
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
@@ -758,7 +758,7 @@ button:disabled {
 .customer-selector {
   border: 1px solid var(--border);
   border-radius: 8px;
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
   background: var(--input-bg);
 }
@@ -782,20 +782,37 @@ button:disabled {
 }
 
 .customer-checkbox input[type="checkbox"] {
-  width: auto;
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
   cursor: pointer;
   flex-shrink: 0;
+  accent-color: var(--primary);
+  appearance: auto;
+  -webkit-appearance: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
 }
 
-.customer-checkbox span {
+.customer-checkbox .customer-name-text {
   font-size: 0.875rem;
   color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .customer-email-small {
-  font-size: 0.75rem !important;
-  color: var(--text-muted) !important;
+  font-size: 0.75rem;
+  color: var(--text-muted);
   margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 0.5rem;
 }
 
 /* ── Select All button inside form-group ─────────── */

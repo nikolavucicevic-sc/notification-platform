@@ -371,7 +371,7 @@ const NotificationForm: React.FC<NotificationFormProps> = ({ onSuccess }) => {
                     checked={selectedCustomers.includes(customer.id)}
                     onChange={() => toggleCustomer(customer.id)}
                   />
-                  <span>
+                  <span className="customer-name-text">
                     {customer.first_name || customer.last_name
                       ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
                       : customer.email}
