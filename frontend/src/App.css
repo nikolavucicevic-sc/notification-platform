@@ -594,9 +594,17 @@ button:disabled {
 .notification-card {
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1rem 1.125rem;
   background: var(--form-bg);
   transition: box-shadow 0.15s ease;
+  overflow: hidden;
+}
+
+.notification-card.collapsed {
+  padding: 0;
+}
+
+.notification-card.expanded {
+  padding-bottom: 1rem;
 }
 
 .notification-card:hover {
@@ -606,16 +614,70 @@ button:disabled {
 .notification-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.625rem;
+  align-items: center;
   gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.notification-header:hover {
+  background: var(--hover-bg);
+}
+
+.notification-card.expanded .notification-header {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+.notification-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-chevron {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.notification-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.notification-type-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--hover-bg);
+  color: var(--text-muted);
 }
 
 .notification-header h3 {
   color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 600;
-  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-body {
+  padding: 0.875rem 1rem 0;
+}
+
+.notification-meta {
+  padding: 0 1rem;
+  margin-top: 0.75rem;
 }
 
 .status-badge {
@@ -656,7 +718,6 @@ button:disabled {
 .notification-body {
   color: var(--text-secondary);
   line-height: 1.5;
-  margin-bottom: 0.75rem;
   font-size: 0.875rem;
 }
 
@@ -668,7 +729,6 @@ button:disabled {
   color: var(--text-muted);
   border-top: 1px solid var(--border);
   padding-top: 0.625rem;
-  margin-top: 0.625rem;
 }
 
 .notification-meta strong {

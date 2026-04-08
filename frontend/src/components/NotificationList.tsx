@@ -13,6 +13,15 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pollingEnabled, setPollingEnabled] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   const previousStatuses = useRef<Map<string, NotificationStatus>>(new Map());
 
   const fetchNotifications = async () => {
@@ -108,33 +117,33 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
         <p className="empty-state">No notifications found</p>
       ) : (
         <div className="notifications">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="notification-card">
-              <div className="notification-header">
-                <h3>
-                  {notification.subject || `${notification.notification_type} Notification`}
-                </h3>
-                <span className={getStatusBadgeClass(notification.status)}>
-                  {notification.status}
-                </span>
+          {notifications.map((notification) => {
+            const expanded = expandedIds.has(notification.id);
+            return (
+              <div key={notification.id} className={`notification-card ${expanded ? 'expanded' : 'collapsed'}`}>
+                <div className="notification-header" onClick={() => toggleExpand(notification.id)}>
+                  <div className="notification-header-left">
+                    <span className="notification-chevron">{expanded ? '▾' : '▸'}</span>
+                    <h3>{notification.subject || `${notification.notification_type} Notification`}</h3>
+                  </div>
+                  <div className="notification-header-right">
+                    <span className="notification-type-badge">{notification.notification_type}</span>
+                    <span className={getStatusBadgeClass(notification.status)}>{notification.status}</span>
+                  </div>
+                </div>
+                {expanded && (
+                  <>
+                    <p className="notification-body">{notification.body}</p>
+                    <div className="notification-meta">
+                      <div><strong>Recipients:</strong> {notification.customer_ids.length} customer(s)</div>
+                      <div><strong>Created:</strong> {formatDate(notification.created_at)}</div>
+                      <div className="notification-id"><strong>ID:</strong> <code>{notification.id}</code></div>
+                    </div>
+                  </>
+                )}
               </div>
-              <p className="notification-body">{notification.body}</p>
-              <div className="notification-meta">
-                <div>
-                  <strong>Type:</strong> {notification.notification_type}
-                </div>
-                <div>
-                  <strong>Recipients:</strong> {notification.customer_ids.length} customer(s)
-                </div>
-                <div>
-                  <strong>Created:</strong> {formatDate(notification.created_at)}
-                </div>
-                <div className="notification-id">
-                  <strong>ID:</strong> <code>{notification.id}</code>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
