@@ -6,6 +6,14 @@ class Settings(BaseSettings):
     redis_email_queue: str = "email:queue"
     redis_dlq_queue: str = "email:dlq"  # Dead Letter Queue
     wiremock_url: str = "http://localhost:8089"
+    customer_service_url: str = "http://localhost:8001"
+
+    # Provider: "wiremock" or "sendgrid"
+    email_provider: str = "wiremock"
+
+    # SendGrid configuration (required when email_provider=sendgrid)
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = ""
 
     # Retry configuration
     max_retry_attempts: int = 3

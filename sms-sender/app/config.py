@@ -8,6 +8,14 @@ class Settings(BaseSettings):
     customer_service_url: str = "http://localhost:8001"
     sms_api_url: str = "http://localhost:8089/sms/send"
 
+    # Provider: "wiremock" or "twilio"
+    sms_provider: str = "wiremock"
+
+    # Twilio configuration (required when sms_provider=twilio)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+
     # Retry configuration
     max_retry_attempts: int = 3
     retry_backoff_base: int = 5  # Base seconds for exponential backoff
