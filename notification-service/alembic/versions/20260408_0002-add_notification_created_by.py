@@ -19,12 +19,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('notifications', sa.Column(
-        'created_by_user_id',
-        postgresql.UUID(as_uuid=True),
-        sa.ForeignKey('users.id', ondelete='SET NULL'),
-        nullable=True
-    ))
+    conn = op.get_bind()
+    existing = [row[0] for row in conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns WHERE table_name='notifications'"
+    ))]
+    if 'created_by_user_id' not in existing:
+        op.add_column('notifications', sa.Column(
+            'created_by_user_id',
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey('users.id', ondelete='SET NULL'),
+            nullable=True
+        ))
 
 
 def downgrade() -> None:

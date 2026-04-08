@@ -19,10 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('email_limit', sa.Integer(), nullable=True))
-    op.add_column('users', sa.Column('sms_limit', sa.Integer(), nullable=True))
-    op.add_column('users', sa.Column('email_sent', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('users', sa.Column('sms_sent', sa.Integer(), nullable=False, server_default='0'))
+    conn = op.get_bind()
+    existing = [row[0] for row in conn.execute(sa.text(
+        "SELECT column_name FROM information_schema.columns WHERE table_name='users'"
+    ))]
+    if 'email_limit' not in existing:
+        op.add_column('users', sa.Column('email_limit', sa.Integer(), nullable=True))
+    if 'sms_limit' not in existing:
+        op.add_column('users', sa.Column('sms_limit', sa.Integer(), nullable=True))
+    if 'email_sent' not in existing:
+        op.add_column('users', sa.Column('email_sent', sa.Integer(), nullable=False, server_default='0'))
+    if 'sms_sent' not in existing:
+        op.add_column('users', sa.Column('sms_sent', sa.Integer(), nullable=False, server_default='0'))
 
 
 def downgrade() -> None:
