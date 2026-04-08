@@ -116,7 +116,7 @@ export function TemplateManager() {
   return (
     <div className="template-manager">
       <div className="template-header">
-        <h2>📝 Template Manager</h2>
+        <h2>Template Manager</h2>
         <div className="header-actions">
           <select
             value={filterChannel}
@@ -240,14 +240,14 @@ export function TemplateManager() {
                   </div>
                   <div className="card-actions">
                     <button onClick={() => handleEdit(template)} className="btn-edit" title="Edit">
-                      ✏️
+                      Edit
                     </button>
                     <button
                       onClick={() => handleDelete(template.id, template.name)}
                       className="btn-delete"
                       title="Delete"
                     >
-                      🗑️
+                      Delete
                     </button>
                   </div>
                 </div>

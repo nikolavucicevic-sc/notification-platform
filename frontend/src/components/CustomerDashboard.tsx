@@ -69,7 +69,7 @@ export function CustomerDashboard() {
   return (
     <div className="customer-dashboard">
       <div className="dashboard-header">
-        <h2>👥 Customer Management</h2>
+        <h2>Customer Management</h2>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary">
           {showForm ? 'Cancel' : '+ Add Customer'}
         </button>
@@ -111,7 +111,7 @@ export function CustomerDashboard() {
       <div className="search-bar">
         <input
           type="search"
-          placeholder="🔍 Search customers..."
+          placeholder="Search customers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -136,7 +136,7 @@ export function CustomerDashboard() {
                   </div>
                   <div className="customer-email">{customer.email}</div>
                   {customer.phone_number && (
-                    <div className="customer-phone">📱 {customer.phone_number}</div>
+                    <div className="customer-phone">{customer.phone_number}</div>
                   )}
                   <div className="customer-meta">
                     <span className="customer-id">ID: {customer.id.slice(0, 8)}...</span>
@@ -149,7 +149,10 @@ export function CustomerDashboard() {
                     className="btn-delete"
                     title="Delete customer"
                   >
-                    🗑️
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
                   </button>
                 </div>
               </div>

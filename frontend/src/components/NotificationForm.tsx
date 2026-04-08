@@ -176,7 +176,7 @@ const NotificationForm: React.FC<NotificationFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="notification-form">
-      <h2>{notificationType === NotificationType.EMAIL ? '📧 Send Email Notification' : '📱 Send SMS Notification'}</h2>
+      <h2>Send Notification</h2>
       <form onSubmit={handleSubmit}>
         {/* Notification Type Selection */}
         <div className="form-group">
@@ -191,8 +191,8 @@ const NotificationForm: React.FC<NotificationFormProps> = ({ onSuccess }) => {
               setUseTemplate(false);
             }}
           >
-            <option value={NotificationType.EMAIL}>📧 Email</option>
-            <option value={NotificationType.SMS}>📱 SMS</option>
+            <option value={NotificationType.EMAIL}>Email</option>
+            <option value={NotificationType.SMS}>SMS</option>
           </select>
         </div>
 

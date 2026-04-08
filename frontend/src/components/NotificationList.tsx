@@ -86,7 +86,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
     <div className="notification-list">
       <div className="list-header">
         <div>
-          <h2>📨 Notifications</h2>
+          <h2>Notifications</h2>
           <div className="polling-indicator">
             <label>
               <input
@@ -94,13 +94,13 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
                 checked={pollingEnabled}
                 onChange={(e) => setPollingEnabled(e.target.checked)}
               />
-              <span>Auto-refresh (5s)</span>
+              Auto-refresh (5s)
             </label>
-            {pollingEnabled && <span className="polling-dot">●</span>}
+            {pollingEnabled && <span className="polling-dot" />}
           </div>
         </div>
         <button onClick={fetchNotifications} className="refresh-button" disabled={loading}>
-          {loading ? '⟳' : '🔄'} Refresh
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
@@ -112,7 +112,6 @@ const NotificationList: React.FC<NotificationListProps> = ({ refreshTrigger }) =
             <div key={notification.id} className="notification-card">
               <div className="notification-header">
                 <h3>
-                  {notification.notification_type === 'SMS' ? '📱 ' : '📧 '}
                   {notification.subject || `${notification.notification_type} Notification`}
                 </h3>
                 <span className={getStatusBadgeClass(notification.status)}>

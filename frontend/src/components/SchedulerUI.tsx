@@ -146,7 +146,7 @@ export function SchedulerUI() {
   return (
     <div className="scheduler-ui">
       <div className="scheduler-header">
-        <h2>📅 Schedule Notifications</h2>
+        <h2>Schedule Notifications</h2>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary">
           {showForm ? 'Cancel' : '+ Create Schedule'}
         </button>
@@ -294,38 +294,38 @@ export function SchedulerUI() {
 
                 <div className="schedule-meta">
                   <div className="meta-row">
-                    <span>📅 Scheduled: {format(new Date(schedule.scheduled_time), 'PPp')}</span>
-                    <span>🔄 Type: {schedule.schedule_type}</span>
+                    <span>Scheduled: {format(new Date(schedule.scheduled_time), 'PPp')}</span>
+                    <span>Type: {schedule.schedule_type}</span>
                   </div>
                   {schedule.recurrence_type && (
                     <div className="meta-row">
-                      <span>🔁 Recurrence: {schedule.recurrence_type}</span>
-                      <span>▶️ Run Count: {schedule.run_count}</span>
+                      <span>Recurrence: {schedule.recurrence_type}</span>
+                      <span>Run Count: {schedule.run_count}</span>
                     </div>
                   )}
                   {schedule.next_run && (
                     <div className="meta-row">
-                      <span>⏭️ Next Run: {format(new Date(schedule.next_run), 'PPp')}</span>
+                      <span>Next Run: {format(new Date(schedule.next_run), 'PPp')}</span>
                     </div>
                   )}
                   <div className="meta-row">
-                    <span>👥 Recipients: {schedule.customer_ids.length}</span>
-                    <span>{schedule.is_active ? '✅ Active' : '⏸️ Paused'}</span>
+                    <span>Recipients: {schedule.customer_ids.length}</span>
+                    <span>{schedule.is_active ? 'Active' : 'Paused'}</span>
                   </div>
                 </div>
 
                 <div className="schedule-actions">
                   {schedule.is_active ? (
                     <button onClick={() => handlePause(schedule.id)} className="btn-action">
-                      ⏸️ Pause
+                      Pause
                     </button>
                   ) : (
                     <button onClick={() => handleResume(schedule.id)} className="btn-action">
-                      ▶️ Resume
+                      Resume
                     </button>
                   )}
                   <button onClick={() => handleCancel(schedule.id)} className="btn-danger-action">
-                    ❌ Cancel
+                    Cancel
                   </button>
                 </div>
               </div>

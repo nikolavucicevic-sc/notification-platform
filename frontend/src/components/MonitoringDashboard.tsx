@@ -118,7 +118,7 @@ export function MonitoringDashboard() {
   return (
     <div className="monitoring-dashboard">
       <div className="dashboard-header">
-        <h2>🔧 System Monitoring</h2>
+        <h2>System Monitoring</h2>
         <label className="auto-refresh-toggle">
           <input
             type="checkbox"
@@ -134,7 +134,7 @@ export function MonitoringDashboard() {
         <h3>Service Health</h3>
         <div className={`health-card ${health?.status === 'healthy' ? 'healthy' : 'unhealthy'}`}>
           <div className="health-status">
-            <span className="status-icon">{health?.status === 'healthy' ? '✅' : '❌'}</span>
+            <div className={`status-indicator ${health?.status === 'healthy' ? 'healthy' : 'unhealthy'}`} />
             <span className="status-text">{health?.status?.toUpperCase()}</span>
           </div>
 
@@ -165,7 +165,7 @@ export function MonitoringDashboard() {
         <h3>Dead Letter Queue (Failed Notifications)</h3>
 
         {dlq && dlq.total_failed === 0 ? (
-          <div className="empty-state">✅ No failed notifications</div>
+          <div className="empty-state">No failed notifications in the queue</div>
         ) : (
           <>
             <div className="dlq-summary">
@@ -187,7 +187,7 @@ export function MonitoringDashboard() {
             {dlq && dlq.email_dlq.count > 0 && (
               <div className="dlq-channel">
                 <div className="dlq-channel-header">
-                  <h4>📧 Email DLQ ({dlq.email_dlq.count})</h4>
+                  <h4>Email DLQ ({dlq.email_dlq.count})</h4>
                   <button
                     onClick={() => clearDLQ('email')}
                     className="btn-danger-small"
@@ -205,7 +205,7 @@ export function MonitoringDashboard() {
                           onClick={() => retryMessage('email', msg.notification_id)}
                           className="btn-retry"
                         >
-                          🔄 Retry
+                          Retry
                         </button>
                       </div>
 
@@ -225,7 +225,7 @@ export function MonitoringDashboard() {
             {dlq && dlq.sms_dlq.count > 0 && (
               <div className="dlq-channel">
                 <div className="dlq-channel-header">
-                  <h4>📱 SMS DLQ ({dlq.sms_dlq.count})</h4>
+                  <h4>SMS DLQ ({dlq.sms_dlq.count})</h4>
                   <button
                     onClick={() => clearDLQ('sms')}
                     className="btn-danger-small"
@@ -243,7 +243,7 @@ export function MonitoringDashboard() {
                           onClick={() => retryMessage('sms', msg.notification_id)}
                           className="btn-retry"
                         >
-                          🔄 Retry
+                          Retry
                         </button>
                       </div>
 

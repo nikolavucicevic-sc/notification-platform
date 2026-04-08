@@ -157,7 +157,7 @@ export function AdminDashboard() {
     return (
       <div className="admin-dashboard">
         <div className="access-denied">
-          <h2>🔒 Access Denied</h2>
+          <h2>Access Denied</h2>
           <p>Admin access required to view this page.</p>
           <p>Your role: <span className={getRoleBadgeClass(currentUser?.role || '')}>{currentUser?.role}</span></p>
         </div>
@@ -168,7 +168,7 @@ export function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <div className="admin-header">
-        <h2>👑 Admin Dashboard</h2>
+        <h2>Admin Dashboard</h2>
         <p>Manage users, API keys, and view audit logs</p>
       </div>
 
@@ -177,19 +177,19 @@ export function AdminDashboard() {
           className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          👥 Users
+          Users
         </button>
         <button
           className={`admin-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
           onClick={() => setActiveTab('api-keys')}
         >
-          🔑 API Keys
+          API Keys
         </button>
         <button
           className={`admin-tab ${activeTab === 'audit' ? 'active' : ''}`}
           onClick={() => setActiveTab('audit')}
         >
-          📋 Audit Logs
+          Audit Logs
         </button>
       </div>
 
@@ -227,7 +227,7 @@ export function AdminDashboard() {
                         <td><span className={getRoleBadgeClass(user.role)}>{user.role}</span></td>
                         <td>
                           <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
-                            {user.is_active ? '✓ Active' : '✗ Inactive'}
+                            {user.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td>{formatDate(user.last_login)}</td>
@@ -274,9 +274,9 @@ export function AdminDashboard() {
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                   {createdKey ? (
                     <div className="key-created">
-                      <h3>✅ API Key Created!</h3>
+                      <h3>API Key Created</h3>
                       <p className="warning-text">
-                        ⚠️ Save this key now! It won't be shown again.
+                        Save this key now. It won't be shown again.
                       </p>
                       <div className="api-key-display">
                         <code>{createdKey}</code>
@@ -284,7 +284,7 @@ export function AdminDashboard() {
                           navigator.clipboard.writeText(createdKey);
                           toast.success('Copied to clipboard!');
                         }}>
-                          📋 Copy
+                          Copy
                         </button>
                       </div>
                       <button className="btn-primary" onClick={() => {
@@ -360,7 +360,7 @@ export function AdminDashboard() {
                         <td>{formatDate(key.expires_at)}</td>
                         <td>
                           <button className="btn-danger-small" onClick={() => deleteAPIKey(key.id)}>
-                            🗑️ Delete
+                            Delete
                           </button>
                         </td>
                       </tr>
@@ -378,7 +378,7 @@ export function AdminDashboard() {
             <div className="section-header">
               <h3>Audit Logs (Last 100)</h3>
               <button className="btn-secondary" onClick={fetchAuditLogs}>
-                🔄 Refresh
+                Refresh
               </button>
             </div>
 
