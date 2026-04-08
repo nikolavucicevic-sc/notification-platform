@@ -56,7 +56,8 @@ async def create_notification(
         subject=notification.subject,
         body=notification.body,
         customer_ids=[str(cid) for cid in notification.customer_ids],
-        status=NotificationStatus.PENDING
+        status=NotificationStatus.PENDING,
+        created_by_user_id=current_user.id
     )
     db.add(db_notification)
     db.commit()

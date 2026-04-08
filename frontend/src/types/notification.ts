@@ -24,6 +24,7 @@ export interface Notification {
   body: string;
   customer_ids: string[];
   status: NotificationStatus;
+  created_by_user_id?: string | null;
   created_at: string;
   updated_at: string;
 }

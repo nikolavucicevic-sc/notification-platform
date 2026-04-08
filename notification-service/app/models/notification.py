@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, JSON
+from sqlalchemy import Column, String, DateTime, Enum, JSON, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 import uuid
@@ -28,5 +28,6 @@ class Notification(Base):
     body = Column(String, nullable=False)
     customer_ids = Column(JSON, nullable=False)
     status = Column(Enum(NotificationStatus), nullable=False, default=NotificationStatus.PENDING)
+    created_by_user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

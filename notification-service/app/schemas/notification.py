@@ -28,6 +28,7 @@ class NotificationResponse(BaseModel):
     body: str
     customer_ids: list[str]
     status: NotificationStatus
+    created_by_user_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

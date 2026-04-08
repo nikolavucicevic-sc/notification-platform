@@ -767,6 +767,122 @@ button:disabled {
   font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
+/* ── Notification type tabs ─────────────────────── */
+.notif-type-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.notif-type-tab {
+  padding: 0 1rem;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: auto;
+}
+
+.notif-type-tab:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+  transform: none;
+  box-shadow: none;
+}
+
+.notif-type-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: transparent;
+}
+
+.tab-count {
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 0.0625rem 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.notif-type-tab.active .tab-count {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+}
+
+/* ── Filter bar ──────────────────────────────────── */
+.notif-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.notif-filter-select {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--form-bg);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.notif-filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.notif-sort-btn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--form-bg);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  width: auto;
+  transition: all 0.15s;
+}
+
+.notif-sort-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: none;
+  box-shadow: none;
+  background: var(--form-bg);
+}
+
+.notif-filter-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.notif-user-badge {
+  padding: 0.125rem 0.4375rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
 /* ── Template Toggle ─────────────────────────────── */
 .template-toggle {
   display: flex;
