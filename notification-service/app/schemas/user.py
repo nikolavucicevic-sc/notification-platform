@@ -32,6 +32,13 @@ class UserLimitsUpdate(BaseModel):
     sms_limit: Optional[int] = Field(None, ge=0)
 
 
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    current_password: Optional[str] = None   # required when changing password
+    new_password: Optional[str] = Field(None, min_length=8)
+
+
 # Response schemas
 class Token(BaseModel):
     access_token: str

@@ -31,6 +31,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUsage: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isOperatorOrAdmin: boolean;
@@ -99,6 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUsage();
   };
 
+  const refreshUser = async () => {
+    await fetchCurrentUser(token!);
+  };
+
   const login = async (username: string, password: string) => {
     try {
       const response = await axios.post('/api/auth/login', { username, password });
@@ -129,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     refreshUsage,
+    refreshUser,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'ADMIN',
     isOperatorOrAdmin: user?.role === 'ADMIN' || user?.role === 'OPERATOR',

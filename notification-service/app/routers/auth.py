@@ -18,6 +18,7 @@ from app.schemas.user import (
     UserUpdate,
     UserLimitsUpdate,
     UserUsageResponse,
+    ProfileUpdate,
 )
 from app.auth import (
     verify_password,
@@ -181,6 +182,49 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     Get current user information.
     """
+    return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_my_profile(
+    profile: ProfileUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update own profile. Any authenticated user can update their full_name and email.
+    Changing password requires current_password for verification.
+    """
+    if profile.full_name is not None:
+        current_user.full_name = profile.full_name
+
+    if profile.email is not None:
+        existing = db.query(User).filter(User.email == profile.email, User.id != current_user.id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        current_user.email = profile.email
+
+    if profile.new_password is not None:
+        if not profile.current_password:
+            raise HTTPException(status_code=400, detail="Current password is required to set a new password")
+        if not verify_password(profile.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        current_user.hashed_password = get_password_hash(profile.new_password)
+
+    db.commit()
+    db.refresh(current_user)
+
+    await create_audit_log(
+        db=db,
+        action="user.profile_update",
+        user=current_user,
+        resource_type="user",
+        resource_id=str(current_user.id),
+        details={"fields_updated": [f for f in ["full_name", "email", "password"] if getattr(profile, f if f != "password" else "new_password") is not None]},
+        request=request
+    )
+
     return current_user
 
 

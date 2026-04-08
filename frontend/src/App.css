@@ -144,6 +144,17 @@ body {
   background: var(--form-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: auto;
+}
+
+.user-info:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+  transform: none;
+  background: var(--form-bg);
 }
 
 .user-avatar {

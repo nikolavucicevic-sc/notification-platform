@@ -8,6 +8,7 @@ import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
 import { UsageWidget } from './components/UsageWidget';
+import { ProfileModal } from './components/ProfileModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -107,6 +108,7 @@ function LogOutIcon() {
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
+  const [showProfile, setShowProfile] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, isAuthenticated, isAdmin, logout, loading, refreshUsage } = useAuth();
 
@@ -148,11 +150,11 @@ function AppContent() {
             </div>
           </div>
           <div className="header-right">
-            <div className="user-info">
+            <button className="user-info" onClick={() => setShowProfile(true)} title="Edit profile">
               <div className="user-avatar">{user?.username?.[0]?.toUpperCase()}</div>
-              <span className="user-name">{user?.username}</span>
+              <span className="user-name">{user?.full_name || user?.username}</span>
               <span className={`user-role role-${user?.role.toLowerCase()}`}>{user?.role}</span>
-            </div>
+            </button>
             <button onClick={toggleTheme} className="icon-button" title="Toggle theme">
               {theme === 'light' ? <MoonIcon /> : <SunIcon />}
             </button>
@@ -178,6 +180,8 @@ function AppContent() {
           ))}
         </div>
       </nav>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
 
       <div className="app-content">
         {activeTab === 'notifications' && (
