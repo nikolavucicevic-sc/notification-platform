@@ -25,12 +25,7 @@ logger = get_logger(__name__)
 
 # Wait for database to be ready before creating tables
 wait_for_db(settings.database_url)
-
-# TODO: Replace with Alembic migrations in production
-# For now, keep create_all for development
-if settings.environment == "development":
-    Base.metadata.create_all(bind=engine)
-    logger.info("database_tables_created", environment="development")
+# Schema migrations are handled by Alembic (runs via start.sh before this process starts)
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)

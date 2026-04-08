@@ -12,6 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app ./app
 COPY create_admin.py .
+COPY alembic ./alembic
+COPY alembic.ini .
 
 # Ensure Python outputs are not buffered
 ENV PYTHONUNBUFFERED=1
@@ -19,8 +21,8 @@ ENV PYTHONUNBUFFERED=1
 # Expose port
 EXPOSE 8002
 
-# Create a startup script that runs admin creation then starts the server
-RUN echo '#!/bin/bash\npython create_admin.py || true\nexec uvicorn app.main:app --host 0.0.0.0 --port 8002' > /app/start.sh && \
+# Startup: run migrations, create admin, then start the server
+RUN echo '#!/bin/bash\nalembic upgrade head\npython create_admin.py || true\nexec uvicorn app.main:app --host 0.0.0.0 --port 8002' > /app/start.sh && \
     chmod +x /app/start.sh
 
 # Run the application
