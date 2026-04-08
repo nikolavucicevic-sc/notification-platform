@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     redis_dlq_queue: str = "sms:dlq"  # Dead Letter Queue
     customer_service_url: str = "http://localhost:8001"
     sms_api_url: str = "http://localhost:8089/sms/send"
+    notification_service_url: str = "http://localhost:8002"
 
     # Provider: "wiremock" or "twilio"
     sms_provider: str = "wiremock"

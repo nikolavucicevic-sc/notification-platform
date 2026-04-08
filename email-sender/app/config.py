@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     redis_dlq_queue: str = "email:dlq"  # Dead Letter Queue
     wiremock_url: str = "http://localhost:8089"
     customer_service_url: str = "http://localhost:8001"
+    notification_service_url: str = "http://localhost:8002"
 
     # Provider: "wiremock" or "sendgrid"
     email_provider: str = "wiremock"

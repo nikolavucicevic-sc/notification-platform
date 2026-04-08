@@ -2,9 +2,23 @@ import json
 import asyncio
 import time
 
+import httpx
+
 from app.config import settings
 from app.services.email_client import send_email
 from app.redis_utils import RedisQueue
+
+
+async def update_notification_status(notification_id: str, status: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.patch(
+                f"{settings.notification_service_url}/notifications/{notification_id}/status",
+                json={"status": status},
+                timeout=5
+            )
+    except Exception as e:
+        print(f"⚠️  Failed to update notification {notification_id} status to {status}: {e}")
 
 
 async def process_email_request(message: dict, redis_queue: RedisQueue):
@@ -39,6 +53,7 @@ async def process_email_request(message: dict, redis_queue: RedisQueue):
                 print(f"✓ Email sent to customer {customer_id}")
 
             print(f"✅ Successfully processed notification {notification_id}")
+            await update_notification_status(notification_id, "COMPLETED")
 
         except Exception as e:
             print(f"❌ Error processing notification {notification_id}: {e}")
@@ -50,19 +65,16 @@ async def process_email_request(message: dict, redis_queue: RedisQueue):
 
                 print(f"⏱️  Scheduling retry {retry_count}/{settings.max_retry_attempts} in {backoff_seconds}s")
 
-                # Update retry count in message
                 message["retry_count"] = retry_count
                 message["last_error"] = str(e)
                 message["last_attempt_at"] = time.time()
 
-                # Schedule retry by sleeping then re-queuing
                 await asyncio.sleep(backoff_seconds)
                 redis_queue.push(settings.redis_email_queue, message)
 
                 print(f"🔄 Notification {notification_id} re-queued for retry")
 
             else:
-                # Max retries exceeded - move to Dead Letter Queue
                 print(f"💀 Max retries exceeded for notification {notification_id}, moving to DLQ")
 
                 message["failed_at"] = time.time()
@@ -70,6 +82,7 @@ async def process_email_request(message: dict, redis_queue: RedisQueue):
                 message["total_attempts"] = retry_count + 1
 
                 redis_queue.push(settings.redis_dlq_queue, message)
+                await update_notification_status(notification_id, "FAILED")
                 print(f"📋 Notification {notification_id} moved to Dead Letter Queue")
 
     except Exception as e:

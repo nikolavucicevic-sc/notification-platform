@@ -88,6 +88,31 @@ async def create_notification(
 
     return db_notification
 
+@router.patch("/{notification_id}/status", response_model=NotificationResponse)
+async def update_notification_status(
+    notification_id: UUID,
+    status_data: dict,
+    db: Session = Depends(get_db),
+):
+    """
+    Internal endpoint called by email-sender and sms-sender to update
+    notification status after processing. No auth required (internal network only).
+    """
+    notification = db.query(Notification).filter(Notification.id == notification_id).first()
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+
+    status_str = status_data.get("status")
+    try:
+        notification.status = NotificationStatus[status_str]
+    except KeyError:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status_str}")
+
+    db.commit()
+    db.refresh(notification)
+    return notification
+
+
 @router.get("/", response_model=list[NotificationResponse])
 async def get_notifications(
     db: Session = Depends(get_db),

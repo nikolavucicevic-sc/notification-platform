@@ -186,6 +186,7 @@ services:
       REDIS_EMAIL_QUEUE: email:queue
       WIREMOCK_URL: http://wiremock:8080
       CUSTOMER_SERVICE_URL: http://customer-service:8001
+      NOTIFICATION_SERVICE_URL: http://notification-service:8002
       # Set EMAIL_PROVIDER=sendgrid and supply credentials to use real sending:
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-wiremock}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
@@ -215,6 +216,7 @@ services:
       REDIS_SMS_QUEUE: sms:queue
       CUSTOMER_SERVICE_URL: http://customer-service:8001
       SMS_API_URL: http://wiremock:8080/sms/send
+      NOTIFICATION_SERVICE_URL: http://notification-service:8002
       # Set SMS_PROVIDER=twilio and supply credentials to use real sending:
       SMS_PROVIDER: ${SMS_PROVIDER:-wiremock}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
