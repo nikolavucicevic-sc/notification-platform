@@ -9,12 +9,12 @@ class Settings(BaseSettings):
     customer_service_url: str = "http://localhost:8001"
     notification_service_url: str = "http://localhost:8002"
 
-    # Provider: "wiremock" or "sendgrid"
+    # Provider: "wiremock" or "brevo"
     email_provider: str = "wiremock"
 
-    # SendGrid configuration (required when email_provider=sendgrid)
-    sendgrid_api_key: str = ""
-    sendgrid_from_email: str = ""
+    # Brevo configuration (required when email_provider=brevo)
+    brevo_api_key: str = ""
+    brevo_from_email: str = ""
 
     # Retry configuration
     max_retry_attempts: int = 3

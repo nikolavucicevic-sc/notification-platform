@@ -6,8 +6,8 @@ logger = get_logger(__name__)
 
 
 async def send_email(customer_id: str, subject: str, body: str) -> dict:
-    if settings.email_provider == "sendgrid":
-        return await _send_via_sendgrid(customer_id, subject, body)
+    if settings.email_provider == "brevo":
+        return await _send_via_brevo(customer_id, subject, body)
     return await _send_via_wiremock(customer_id, subject, body)
 
 
@@ -31,8 +31,14 @@ async def _send_via_wiremock(customer_id: str, subject: str, body: str) -> dict:
             return {"customer_id": customer_id, "success": False, "error": str(e)}
 
 
-async def _send_via_sendgrid(customer_id: str, subject: str, body: str) -> dict:
+async def _send_via_brevo(customer_id: str, subject: str, body: str) -> dict:
+    """
+    Send email via Brevo (formerly Sendinblue) API.
+    Requires BREVO_API_KEY and BREVO_FROM_EMAIL to be set.
+    The recipient email is fetched from the customer-service.
+    """
     async with httpx.AsyncClient() as client:
+        # Fetch customer email from customer-service
         try:
             customer_response = await client.get(
                 f"{settings.customer_service_url}/customers/{customer_id}",
@@ -51,22 +57,23 @@ async def _send_via_sendgrid(customer_id: str, subject: str, body: str) -> dict:
 
         try:
             response = await client.post(
-                "https://api.sendgrid.com/v3/mail/send",
+                "https://api.brevo.com/v3/smtp/email",
                 headers={
-                    "Authorization": f"Bearer {settings.sendgrid_api_key}",
+                    "api-key": settings.brevo_api_key,
                     "Content-Type": "application/json"
                 },
                 json={
-                    "personalizations": [{"to": [{"email": to_email}]}],
-                    "from": {"email": settings.sendgrid_from_email},
+                    "sender": {"email": settings.brevo_from_email},
+                    "to": [{"email": to_email}],
                     "subject": subject,
-                    "content": [{"type": "text/plain", "value": body}]
+                    "textContent": body
                 },
                 timeout=10
             )
-            success = response.status_code == 202
+            # Brevo returns 201 Created on success
+            success = response.status_code == 201
             logger.info(
-                "sendgrid_email_sent",
+                "brevo_email_sent",
                 customer_id=customer_id,
                 to_email=to_email,
                 success=success,
@@ -74,5 +81,5 @@ async def _send_via_sendgrid(customer_id: str, subject: str, body: str) -> dict:
             )
             return {"customer_id": customer_id, "success": success, "status_code": response.status_code}
         except Exception as e:
-            logger.error("sendgrid_email_failed", customer_id=customer_id, to_email=to_email, error=str(e))
+            logger.error("brevo_email_failed", customer_id=customer_id, to_email=to_email, error=str(e))
             return {"customer_id": customer_id, "success": False, "error": str(e)}

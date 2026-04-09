@@ -187,10 +187,10 @@ services:
       WIREMOCK_URL: http://wiremock:8080
       CUSTOMER_SERVICE_URL: http://customer-service:8001
       NOTIFICATION_SERVICE_URL: http://notification-service:8002
-      # Set EMAIL_PROVIDER=sendgrid and supply credentials to use real sending:
+      # Set EMAIL_PROVIDER=brevo and supply credentials to use real sending:
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-wiremock}
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
-      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_FROM_EMAIL: ${BREVO_FROM_EMAIL:-}
     depends_on:
       redis:
         condition: service_healthy
