@@ -22,7 +22,8 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8002
 
 # Startup: run migrations, create admin, then start the server
-RUN echo '#!/bin/bash\nalembic upgrade head\npython create_admin.py || true\nexec uvicorn app.main:app --host 0.0.0.0 --port 8002' > /app/start.sh && \
+# set -e ensures the container crashes immediately if alembic migration fails
+RUN printf '#!/bin/bash\nset -e\necho "[start.sh] Running Alembic migrations..."\nalembic upgrade head\necho "[start.sh] Migrations complete"\npython create_admin.py || true\nexec uvicorn app.main:app --host 0.0.0.0 --port 8002\n' > /app/start.sh && \
     chmod +x /app/start.sh
 
 # Run the application

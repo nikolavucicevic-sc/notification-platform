@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 import signal
 import asyncio
+import traceback
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -121,6 +123,23 @@ app.include_router(auth.router)
 app.include_router(notifications.router)
 app.include_router(health.router)
 app.include_router(dlq.router)
+
+# Global exception handler — catches unhandled exceptions, logs root cause, returns clean 500
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        "unhandled_exception",
+        method=request.method,
+        path=request.url.path,
+        error_type=type(exc).__name__,
+        error=str(exc),
+        traceback=traceback.format_exc()
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {type(exc).__name__}"}
+    )
+
 
 # Prometheus metrics endpoint
 @app.get("/metrics")

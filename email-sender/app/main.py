@@ -1,17 +1,13 @@
 import asyncio
+from app.logging_config import configure_logging, get_logger
 from app.messaging.consumer import start_email_consumer
-from app.config import settings
-from app.redis_utils import wait_for_redis
+
+configure_logging()
+logger = get_logger(__name__)
 
 
 async def main():
-    print(f"Email Sender starting...")
-    print(f"Listening on Redis queue: {settings.redis_email_queue}")
-
-    # Wait for Redis to be ready
-    wait_for_redis(settings.redis_url)
-
-    # Start the email consumer (it will loop forever)
+    logger.info("email_sender_starting", provider="configured via EMAIL_PROVIDER env var")
     await start_email_consumer()
 
 
