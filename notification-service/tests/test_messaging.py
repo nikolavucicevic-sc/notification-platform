@@ -1,6 +1,6 @@
 import pytest
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from uuid import uuid4
 
 from app.messaging.publisher import publish_email_request
@@ -9,29 +9,17 @@ from app.models.notification import Notification, NotificationStatus, Notificati
 
 @pytest.mark.messaging
 class TestPublisher:
-    """Test cases for RabbitMQ publisher."""
+    """Test cases for Redis publisher."""
 
     @pytest.mark.asyncio
-    @patch("app.messaging.publisher.aio_pika.connect_robust")
-    async def test_publish_email_request_success(self, mock_connect):
-        """Test successful publishing of email request."""
-        # Setup mocks
-        mock_connection = AsyncMock()
-        mock_channel = AsyncMock()
-        mock_queue = AsyncMock()
-        mock_queue.name = "email.send"
+    @patch("app.messaging.publisher.RedisQueue")
+    async def test_publish_email_request_success(self, MockRedisQueue):
+        """Test successful publishing of email request to Redis."""
+        mock_queue = MagicMock()
+        mock_queue.push.return_value = True
+        mock_queue.close = MagicMock()
+        MockRedisQueue.return_value = mock_queue
 
-        mock_channel.declare_exchange = AsyncMock()
-        mock_channel.declare_queue = AsyncMock(return_value=mock_queue)
-        mock_channel.default_exchange.publish = AsyncMock()
-
-        mock_connection.__aenter__ = AsyncMock(return_value=mock_connection)
-        mock_connection.__aexit__ = AsyncMock(return_value=None)
-        mock_connection.channel = AsyncMock(return_value=mock_channel)
-
-        mock_connect.return_value = mock_connection
-
-        # Create a test notification
         notification = Notification(
             notification_type=NotificationType.EMAIL,
             subject="Test Subject",
@@ -40,31 +28,14 @@ class TestPublisher:
             status=NotificationStatus.PENDING
         )
 
-        # Execute
         await publish_email_request(notification)
 
-        # Verify connection was established
-        mock_connect.assert_called_once()
+        mock_queue.push.assert_called_once()
+        call_args = mock_queue.push.call_args
+        queue_name = call_args[0][0]
+        message_body = call_args[0][1]
 
-        # Verify channel was created
-        mock_connection.channel.assert_called_once()
-
-        # Verify DLX and DLQ were declared
-        assert mock_channel.declare_exchange.call_count == 1
-        assert mock_channel.declare_queue.call_count == 2
-
-        # Verify message was published
-        mock_channel.default_exchange.publish.assert_called_once()
-
-        # Verify message content
-        call_args = mock_channel.default_exchange.publish.call_args
-        message = call_args[0][0]
-        routing_key = call_args[1]["routing_key"]
-
-        assert routing_key == "email.send"
-
-        # Parse message body
-        message_body = json.loads(message.body.decode())
+        assert "email" in queue_name
         assert message_body["notification_id"] == str(notification.id)
         assert message_body["subject"] == notification.subject
         assert message_body["body"] == notification.body
@@ -72,10 +43,10 @@ class TestPublisher:
         assert message_body["retry_count"] == 0
 
     @pytest.mark.asyncio
-    @patch("app.messaging.publisher.aio_pika.connect_robust")
-    async def test_publish_email_request_connection_failure(self, mock_connect):
-        """Test handling of connection failure."""
-        mock_connect.side_effect = Exception("Connection failed")
+    @patch("app.messaging.publisher.RedisQueue")
+    async def test_publish_email_request_connection_failure(self, MockRedisQueue):
+        """Test handling of Redis connection failure."""
+        MockRedisQueue.side_effect = Exception("Redis connection failed")
 
         notification = Notification(
             notification_type=NotificationType.EMAIL,
@@ -84,22 +55,37 @@ class TestPublisher:
             customer_ids=[str(uuid4())]
         )
 
-        with pytest.raises(Exception, match="Connection failed"):
+        with pytest.raises(Exception, match="Redis connection failed"):
             await publish_email_request(notification)
+
+    @pytest.mark.asyncio
+    @patch("app.messaging.publisher.RedisQueue")
+    async def test_publish_sms_request_uses_sms_queue(self, MockRedisQueue):
+        """Test that SMS notifications are pushed to the SMS queue."""
+        mock_queue = MagicMock()
+        mock_queue.push.return_value = True
+        mock_queue.close = MagicMock()
+        MockRedisQueue.return_value = mock_queue
+
+        notification = Notification(
+            notification_type=NotificationType.SMS,
+            subject="Test SMS",
+            body="SMS Body",
+            customer_ids=[str(uuid4())],
+            status=NotificationStatus.PENDING
+        )
+
+        await publish_email_request(notification)
+
+        mock_queue.push.assert_called_once()
+        queue_name = mock_queue.push.call_args[0][0]
+        assert "sms" in queue_name
 
 
 @pytest.mark.messaging
 class TestConsumer:
-    """Test cases for RabbitMQ consumer (status updates)."""
+    """Placeholder — consumer runs as a long-lived process and is tested via integration tests."""
 
     @pytest.mark.asyncio
     async def test_consumer_configuration(self):
-        """Test that consumer is properly configured."""
-        # This is a placeholder test - actual consumer tests would require
-        # running the consumer service and simulating message delivery
-        # In a real scenario, you'd test:
-        # 1. Consumer connects to the correct queue
-        # 2. Consumer processes status updates correctly
-        # 3. Consumer updates notification status in database
-        # 4. Consumer acknowledges messages properly
-        assert True  # Placeholder
+        assert True
