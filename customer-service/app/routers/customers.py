@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.customer import Customer
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
 
-router = APIRouter(prefix="/customers", tags=["customers"])
+router = APIRouter(prefix="/customers", tags=["customers"], redirect_slashes=False)
 
 
 @router.post("/", response_model=CustomerResponse, status_code=201)
