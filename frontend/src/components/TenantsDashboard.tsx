@@ -45,7 +45,7 @@ export function TenantsDashboard() {
 
   const fetchTenants = async () => {
     try {
-      const res = await axios.get('/api/tenants');
+      const res = await axios.get('/api/tenants/');
       setTenants(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to load tenants');
@@ -61,7 +61,7 @@ export function TenantsDashboard() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post('/api/tenants', {
+      await axios.post('/api/tenants/', {
         name: form.name,
         email_limit: form.email_limit ? parseInt(form.email_limit) : null,
         sms_limit: form.sms_limit ? parseInt(form.sms_limit) : null,
