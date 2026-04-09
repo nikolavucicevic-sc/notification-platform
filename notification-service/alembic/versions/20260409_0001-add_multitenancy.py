@@ -19,7 +19,14 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     conn = op.get_bind()
 
-    # 1. Create tenants table
+    # 1. Add SUPER_ADMIN to userrole enum using AUTOCOMMIT so it is visible
+    # immediately — PostgreSQL does not allow using a new enum value in the
+    # same transaction that added it.
+    conn.execute(sa.text("COMMIT"))  # close the current alembic transaction
+    conn.execute(sa.text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'SUPER_ADMIN'"))
+    conn.execute(sa.text("BEGIN"))  # re-open a transaction for the rest
+
+    # 2. Create tenants table
     existing_tables = [row[0] for row in conn.execute(sa.text(
         "SELECT tablename FROM pg_tables WHERE schemaname='public'"
     ))]
@@ -37,10 +44,6 @@ def upgrade() -> None:
             sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.func.now()),
         )
         op.create_index('ix_tenants_name', 'tenants', ['name'])
-
-    # 2. Add SUPER_ADMIN to userrole enum
-    # PostgreSQL requires special handling to add enum values
-    conn.execute(sa.text("ALTER TYPE userrole ADD VALUE IF NOT EXISTS 'SUPER_ADMIN'"))
 
     # 3. Create TEST COMPANY tenant and get its ID
     result = conn.execute(sa.text(
