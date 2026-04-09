@@ -67,8 +67,7 @@ export function Login() {
             </svg>
           </div>
           <div>
-            <h1>Notify</h1>
-            <p>Notification Platform</p>
+            <h1>Bemby Notify</h1>
           </div>
         </div>
         <div className="login-tagline">

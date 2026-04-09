@@ -80,9 +80,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Notification Platform API",
+    title="Bemby Notify API",
     version="2.0.0",
-    description="Enterprise notification platform with authentication, monitoring, and distributed tracing",
+    description="Bemby Notify — enterprise notification platform with authentication, monitoring, and distributed tracing",
     lifespan=lifespan
 )
 
