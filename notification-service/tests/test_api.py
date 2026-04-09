@@ -10,7 +10,7 @@ class TestCreateNotification:
     @patch("app.routers.notifications.publish_email_request", new_callable=AsyncMock)
     def test_create_notification_success(self, mock_publish, client, sample_notification_data):
         """Test successful notification creation."""
-        response = client.post("/notifications/", json=sample_notification_data)
+        response = client.post("/notifications", json=sample_notification_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -29,7 +29,7 @@ class TestCreateNotification:
     @patch("app.routers.notifications.publish_email_request", new_callable=AsyncMock)
     def test_create_notification_minimal(self, mock_publish, client, sample_notification_minimal):
         """Test notification creation with minimal data."""
-        response = client.post("/notifications/", json=sample_notification_minimal)
+        response = client.post("/notifications", json=sample_notification_minimal)
 
         assert response.status_code == 201
         data = response.json()
@@ -38,7 +38,7 @@ class TestCreateNotification:
     def test_create_notification_missing_fields(self, client):
         """Test that missing required fields return validation error."""
         incomplete_data = {"subject": "Test"}
-        response = client.post("/notifications/", json=incomplete_data)
+        response = client.post("/notifications", json=incomplete_data)
 
         assert response.status_code == 422
 
@@ -51,7 +51,7 @@ class TestCreateNotification:
             "body": "Test body",
             "customer_ids": []
         }
-        response = client.post("/notifications/", json=data)
+        response = client.post("/notifications", json=data)
 
         # Should either fail validation or succeed - depends on schema validation
         # Adjust based on actual validation rules
@@ -64,7 +64,7 @@ class TestGetNotifications:
 
     def test_get_notifications_empty(self, client):
         """Test getting notifications when none exist."""
-        response = client.get("/notifications/")
+        response = client.get("/notifications")
 
         assert response.status_code == 200
         assert response.json() == []
@@ -77,10 +77,10 @@ class TestGetNotifications:
         data2 = sample_notification_data.copy()
         data2["subject"] = "Second notification"
 
-        client.post("/notifications/", json=data1)
-        client.post("/notifications/", json=data2)
+        client.post("/notifications", json=data1)
+        client.post("/notifications", json=data2)
 
-        response = client.get("/notifications/")
+        response = client.get("/notifications")
 
         assert response.status_code == 200
         data = response.json()
@@ -95,7 +95,7 @@ class TestGetNotification:
     def test_get_notification_success(self, mock_publish, client, sample_notification_data):
         """Test successfully retrieving a notification by ID."""
         # Create a notification
-        create_response = client.post("/notifications/", json=sample_notification_data)
+        create_response = client.post("/notifications", json=sample_notification_data)
         notification_id = create_response.json()["id"]
 
         # Retrieve the notification

@@ -16,7 +16,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"], redirect_sla
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/", response_model=NotificationResponse, status_code=201)
+@router.post("", response_model=NotificationResponse, status_code=201)
 @limiter.limit("10/minute")
 async def create_notification(
     request: Request,
@@ -100,7 +100,7 @@ async def update_notification_status(
     return notification
 
 
-@router.get("/", response_model=list[NotificationResponse])
+@router.get("", response_model=list[NotificationResponse])
 async def get_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

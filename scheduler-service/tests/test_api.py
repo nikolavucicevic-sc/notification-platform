@@ -13,7 +13,7 @@ class TestCreateScheduledNotification:
     def test_create_one_time_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test creating a one-time scheduled notification."""
         logger.info("Testing one-time schedule creation")
-        response = client.post("/schedules/", json=sample_schedule_data)
+        response = client.post("/schedules", json=sample_schedule_data)
         logger.info(f"Response status: {response.status_code}")
 
         assert response.status_code == 201
@@ -30,7 +30,7 @@ class TestCreateScheduledNotification:
 
     def test_create_recurring_schedule_success(self, client, sample_recurring_schedule_data, mock_scheduler):
         """Test creating a recurring scheduled notification."""
-        response = client.post("/schedules/", json=sample_recurring_schedule_data)
+        response = client.post("/schedules", json=sample_recurring_schedule_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -49,7 +49,7 @@ class TestCreateScheduledNotification:
             "customer_ids": [str(uuid4())]
         }
 
-        response = client.post("/schedules/", json=schedule_data)
+        response = client.post("/schedules", json=schedule_data)
         assert response.status_code == 400
         assert "recurrence_type" in response.json()["detail"]
 
@@ -60,7 +60,7 @@ class TestCreateScheduledNotification:
             "scheduled_time": datetime.now().isoformat()
         }
 
-        response = client.post("/schedules/", json=incomplete_data)
+        response = client.post("/schedules", json=incomplete_data)
         assert response.status_code == 422
 
 
@@ -71,23 +71,23 @@ class TestGetScheduledNotifications:
     def test_get_all_schedules(self, client, sample_schedule_data, mock_scheduler):
         """Test retrieving all scheduled notifications."""
         # Create two schedules
-        client.post("/schedules/", json=sample_schedule_data)
+        client.post("/schedules", json=sample_schedule_data)
 
         schedule_data_2 = sample_schedule_data.copy()
         schedule_data_2["subject"] = "Second notification"
-        client.post("/schedules/", json=schedule_data_2)
+        client.post("/schedules", json=schedule_data_2)
 
         # Get all schedules
-        response = client.get("/schedules/")
+        response = client.get("/schedules")
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
 
     def test_get_schedules_filtered_by_status(self, client, sample_schedule_data, mock_scheduler):
         """Test filtering schedules by status."""
-        client.post("/schedules/", json=sample_schedule_data)
+        client.post("/schedules", json=sample_schedule_data)
 
-        response = client.get("/schedules/?status=SCHEDULED")
+        response = client.get("/schedules?status=SCHEDULED")
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
@@ -95,19 +95,19 @@ class TestGetScheduledNotifications:
 
     def test_get_schedules_filtered_by_active(self, client, sample_schedule_data, mock_scheduler):
         """Test filtering schedules by is_active flag."""
-        response = client.post("/schedules/", json=sample_schedule_data)
+        response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = response.json()["id"]
 
         # Pause the schedule
         client.post(f"/schedules/{schedule_id}/pause")
 
         # Get only active schedules
-        response = client.get("/schedules/?is_active=true")
+        response = client.get("/schedules?is_active=true")
         assert response.status_code == 200
         assert len(response.json()) == 0
 
         # Get inactive schedules
-        response = client.get("/schedules/?is_active=false")
+        response = client.get("/schedules?is_active=false")
         assert response.status_code == 200
         assert len(response.json()) == 1
 
@@ -117,15 +117,15 @@ class TestGetScheduledNotifications:
         for i in range(5):
             data = sample_schedule_data.copy()
             data["subject"] = f"Notification {i}"
-            client.post("/schedules/", json=data)
+            client.post("/schedules", json=data)
 
         # Get first 2
-        response = client.get("/schedules/?skip=0&limit=2")
+        response = client.get("/schedules?skip=0&limit=2")
         assert response.status_code == 200
         assert len(response.json()) == 2
 
         # Get next 2
-        response = client.get("/schedules/?skip=2&limit=2")
+        response = client.get("/schedules?skip=2&limit=2")
         assert response.status_code == 200
         assert len(response.json()) == 2
 
@@ -136,7 +136,7 @@ class TestGetScheduledNotificationById:
 
     def test_get_schedule_by_id_success(self, client, sample_schedule_data, mock_scheduler):
         """Test retrieving a specific schedule by ID."""
-        create_response = client.post("/schedules/", json=sample_schedule_data)
+        create_response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = create_response.json()["id"]
 
         response = client.get(f"/schedules/{schedule_id}")
@@ -158,7 +158,7 @@ class TestUpdateScheduledNotification:
 
     def test_update_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test updating a scheduled notification."""
-        create_response = client.post("/schedules/", json=sample_schedule_data)
+        create_response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = create_response.json()["id"]
 
         update_data = {
@@ -187,7 +187,7 @@ class TestCancelScheduledNotification:
 
     def test_cancel_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test canceling a scheduled notification."""
-        create_response = client.post("/schedules/", json=sample_schedule_data)
+        create_response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = create_response.json()["id"]
 
         response = client.delete(f"/schedules/{schedule_id}")
@@ -211,7 +211,7 @@ class TestPauseScheduledNotification:
 
     def test_pause_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test pausing a scheduled notification."""
-        create_response = client.post("/schedules/", json=sample_schedule_data)
+        create_response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = create_response.json()["id"]
 
         response = client.post(f"/schedules/{schedule_id}/pause")
@@ -232,7 +232,7 @@ class TestResumeScheduledNotification:
 
     def test_resume_schedule_success(self, client, sample_schedule_data, mock_scheduler):
         """Test resuming a paused scheduled notification."""
-        create_response = client.post("/schedules/", json=sample_schedule_data)
+        create_response = client.post("/schedules", json=sample_schedule_data)
         schedule_id = create_response.json()["id"]
 
         # First pause it
