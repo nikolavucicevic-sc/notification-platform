@@ -46,9 +46,10 @@ export function TenantsDashboard() {
   const fetchTenants = async () => {
     try {
       const res = await axios.get('/api/tenants');
-      setTenants(res.data);
-    } catch {
-      toast.error('Failed to load tenants');
+      setTenants(Array.isArray(res.data) ? res.data : []);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to load tenants');
+      setTenants([]);
     } finally {
       setLoading(false);
     }
