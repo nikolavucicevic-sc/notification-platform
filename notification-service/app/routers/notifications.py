@@ -12,7 +12,7 @@ from app.messaging.publisher import publish_email_request
 from app.auth import get_current_user, require_operator_or_admin
 from app.audit import log_notification_created
 
-router = APIRouter(prefix="/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"], redirect_slashes=False)
 limiter = Limiter(key_func=get_remote_address)
 
 

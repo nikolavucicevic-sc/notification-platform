@@ -36,7 +36,7 @@ from app.audit import (
     create_audit_log
 )
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"], redirect_slashes=False)
 
 
 @router.post("/login", response_model=Token)

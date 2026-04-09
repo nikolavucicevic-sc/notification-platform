@@ -8,7 +8,7 @@ from app.models.user import User
 from app.auth import get_current_user, require_operator_or_admin, require_admin
 from app.audit import log_dlq_retry, log_dlq_clear
 
-router = APIRouter(prefix="/dlq", tags=["dlq"])
+router = APIRouter(prefix="/dlq", tags=["dlq"], redirect_slashes=False)
 
 
 @router.get("/")

@@ -12,7 +12,7 @@ from app.schemas.scheduled_notification import (
 )
 from app.services.scheduler import add_job_to_scheduler, remove_job_from_scheduler
 
-router = APIRouter(prefix="/schedules", tags=["schedules"])
+router = APIRouter(prefix="/schedules", tags=["schedules"], redirect_slashes=False)
 
 
 @router.post("/", response_model=ScheduledNotificationResponse, status_code=201)

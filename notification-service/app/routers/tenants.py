@@ -9,7 +9,7 @@ from app.schemas.tenant import TenantCreate, TenantUpdate, TenantResponse
 from app.schemas.user import UserResponse
 from app.auth import get_password_hash, require_super_admin
 
-router = APIRouter(prefix="/tenants", tags=["Tenants"])
+router = APIRouter(prefix="/tenants", tags=["Tenants"], redirect_slashes=False)
 
 
 @router.post("/", response_model=TenantResponse, status_code=201)
