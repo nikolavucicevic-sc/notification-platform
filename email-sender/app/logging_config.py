@@ -7,23 +7,24 @@ from datetime import datetime, timezone
 class JSONFormatter(logging.Formatter):
     """Formats log records as single-line JSON for easy parsing."""
 
+    SKIP_KEYS = {
+        "args", "created", "exc_info", "exc_text", "filename",
+        "funcName", "levelname", "levelno", "lineno", "message",
+        "module", "msecs", "msg", "name", "pathname", "process",
+        "processName", "relativeCreated", "stack_info", "taskName",
+        "thread", "threadName",
+    }
+
     def format(self, record: logging.LogRecord) -> str:
         log_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "service": "email-sender",
-            "logger": record.name,
             "message": record.getMessage(),
         }
-        # Merge any extra fields set via logger.info(..., extra={...})
+        # Merge extra fields passed via extra={...}
         for key, value in record.__dict__.items():
-            if key not in (
-                "args", "created", "exc_info", "exc_text", "filename",
-                "funcName", "levelname", "levelno", "lineno", "message",
-                "module", "msecs", "msg", "name", "pathname", "process",
-                "processName", "relativeCreated", "stack_info", "taskName",
-                "thread", "threadName",
-            ):
+            if key not in self.SKIP_KEYS:
                 log_entry[key] = value
 
         if record.exc_info:
@@ -41,10 +42,34 @@ def configure_logging(log_level: str = "INFO") -> None:
     root.addHandler(handler)
     root.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
-    # Silence noisy third-party loggers
     for noisy in ("httpx", "httpcore", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
+
+
+class LoggerAdapter(logging.LoggerAdapter):
+    """Wraps standard logger to accept keyword arguments as structured fields."""
+
+    def info(self, msg, *args, **kwargs):
+        extra = {**self.extra, **kwargs}
+        super().info(msg, *args, extra=extra)
+
+    def error(self, msg, *args, **kwargs):
+        exc_info = kwargs.pop("exc_info", False)
+        extra = {**self.extra, **kwargs}
+        super().error(msg, *args, extra=extra, exc_info=exc_info)
+
+    def warning(self, msg, *args, **kwargs):
+        extra = {**self.extra, **kwargs}
+        super().warning(msg, *args, extra=extra)
+
+    def debug(self, msg, *args, **kwargs):
+        extra = {**self.extra, **kwargs}
+        super().debug(msg, *args, extra=extra)
+
+
+def get_logger(name: str) -> LoggerAdapter:
+    return LoggerAdapter(logging.getLogger(name), {})
