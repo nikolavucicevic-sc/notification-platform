@@ -118,7 +118,7 @@ class TestUpdateCustomer:
         # Update all fields
         update_data = {
             "email": "updated@example.com",
-            "phone_number": "+9876543210",
+            "phone_number": "+38165123456",
             "first_name": "UpdatedFirst",
             "last_name": "UpdatedLast"
         }

@@ -9,8 +9,8 @@ class CustomerCreate(BaseModel):
     email: EmailStr  # Validates email format
     phone_number: str | None = Field(
         None,
-        pattern=r"^\+[1-9]\d{1,14}$",  # E.164 format: +1234567890
-        description="Phone number in E.164 format (e.g., +1234567890)"
+        pattern=r"^\+3816[0-5]\d{6,7}$",  # E.164 format: +1234567890
+        description="Serbian mobile number (e.g., +38164123456)"
     )
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
@@ -29,9 +29,9 @@ class CustomerCreate(BaseModel):
     @validator('phone_number')
     def validate_phone(cls, v):
         """Additional phone validation."""
-        if v and not re.match(r"^\+[1-9]\d{1,14}$", v):
+        if v and not re.match(r"^\+3816[0-5]\d{6,7}$", v):
             raise ValueError(
-                "Phone number must be in E.164 format (e.g., +1234567890)"
+                "Phone number must be in format +381 6X XXXXXXX (e.g., +38164123456)"
             )
         return v
 
@@ -40,8 +40,8 @@ class CustomerUpdate(BaseModel):
     email: EmailStr | None = None
     phone_number: str | None = Field(
         None,
-        pattern=r"^\+[1-9]\d{1,14}$",
-        description="Phone number in E.164 format"
+        pattern=r"^\+3816[0-5]\d{6,7}$",
+        description="Serbian mobile number (e.g., +38164123456)"
     )
     first_name: str | None = Field(None, min_length=1, max_length=100)
     last_name: str | None = Field(None, min_length=1, max_length=100)
@@ -58,9 +58,9 @@ class CustomerUpdate(BaseModel):
     @validator('phone_number')
     def validate_phone(cls, v):
         """Additional phone validation."""
-        if v and not re.match(r"^\+[1-9]\d{1,14}$", v):
+        if v and not re.match(r"^\+3816[0-5]\d{6,7}$", v):
             raise ValueError(
-                "Phone number must be in E.164 format (e.g., +1234567890)"
+                "Phone number must be in format +381 6X XXXXXXX (e.g., +38164123456)"
             )
         return v
 

@@ -87,7 +87,7 @@ export function CustomerDashboard() {
             />
             <input
               type="tel"
-              placeholder="Phone Number (e.g. +1234567890)"
+              placeholder="Phone Number (e.g. +38164123456)"
               value={formData.phone_number}
               onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
             />

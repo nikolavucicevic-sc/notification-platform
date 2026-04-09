@@ -55,7 +55,7 @@ def sample_customer_data():
     """Sample customer data for testing."""
     return {
         "email": "test@example.com",
-        "phone_number": "+1234567890",
+        "phone_number": "+38164123456",
         "first_name": "John",
         "last_name": "Doe"
     }
