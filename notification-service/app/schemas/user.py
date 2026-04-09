@@ -35,7 +35,7 @@ class UserLimitsUpdate(BaseModel):
 class ProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
-    current_password: Optional[str] = None   # required when changing password
+    current_password: Optional[str] = None
     new_password: Optional[str] = Field(None, min_length=8)
 
 
@@ -54,6 +54,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     last_login: Optional[datetime]
+    tenant_id: Optional[UUID]
     email_limit: Optional[int]
     sms_limit: Optional[int]
     email_sent: int
@@ -68,7 +69,7 @@ class UserUsageResponse(BaseModel):
     sms_limit: Optional[int]
     email_sent: int
     sms_sent: int
-    email_remaining: Optional[int]  # None means unlimited
+    email_remaining: Optional[int]
     sms_remaining: Optional[int]
 
     class Config:
@@ -77,7 +78,7 @@ class UserUsageResponse(BaseModel):
 
 class APIKeyCreate(BaseModel):
     key_name: str
-    expires_in_days: Optional[int] = None  # None = never expires
+    expires_in_days: Optional[int] = None
 
 
 class APIKeyResponse(BaseModel):
@@ -94,8 +95,7 @@ class APIKeyResponse(BaseModel):
 
 
 class APIKeyCreateResponse(BaseModel):
-    """Response when creating a new API key - includes the full key (only shown once!)"""
-    api_key: str  # Full key - only shown once!
+    api_key: str
     key_info: APIKeyResponse
 
 

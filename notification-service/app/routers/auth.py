@@ -26,6 +26,7 @@ from app.auth import (
     create_access_token,
     get_current_user,
     require_admin,
+    require_super_admin,
     generate_api_key
 )
 from app.audit import (
@@ -38,117 +39,12 @@ from app.audit import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=201)
-async def register(
-    user_data: UserCreate,
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """
-    Public self-registration endpoint. Creates new user with VIEWER role.
-    """
-    # Check if username already exists
-    if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
-
-    # Check if email already exists
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-
-    # Create new user with VIEWER role (ignore any role from request for security)
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        email=user_data.email,
-        username=user_data.username,
-        hashed_password=hashed_password,
-        full_name=user_data.full_name,
-        role=UserRole.VIEWER  # Always VIEWER for self-registration
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    # Audit log (no admin user for self-registration)
-    await log_user_created(
-        db=db,
-        admin_user=None,
-        new_user_id=str(new_user.id),
-        new_user_email=new_user.email,
-        new_user_role=new_user.role.value,
-        request=request
-    )
-
-    return new_user
-
-
-@router.post("/users", response_model=UserResponse, status_code=201)
-async def create_user_admin(
-    user_data: UserCreate,
-    request: Request,
-    db: Session = Depends(get_db),
-    admin: User = Depends(require_admin)
-):
-    """
-    Create a new user (Admin only). Allows specifying role.
-    """
-    # Check if username already exists
-    if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
-
-    # Check if email already exists
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-
-    # Create new user with specified role
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        email=user_data.email,
-        username=user_data.username,
-        hashed_password=hashed_password,
-        full_name=user_data.full_name,
-        role=user_data.role  # Admin can specify role
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    # Audit log
-    await log_user_created(
-        db=db,
-        admin_user=admin,
-        new_user_id=str(new_user.id),
-        new_user_email=new_user.email,
-        new_user_role=new_user.role.value,
-        request=request
-    )
-
-    return new_user
-
-
 @router.post("/login", response_model=Token)
 async def login(
     credentials: UserLogin,
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Login and receive a JWT access token.
-    """
-    # Find user
     user = db.query(User).filter(User.username == credentials.username).first()
 
     if not user or not verify_password(credentials.password, user.hashed_password):
@@ -159,29 +55,75 @@ async def login(
         )
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
-    # Create access token
+    # Block login if tenant is deactivated
+    if user.tenant_id is not None:
+        from app.models.tenant import Tenant
+        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+        if tenant and not tenant.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your organisation has been deactivated")
+
     access_token = create_access_token(data={"sub": str(user.id)})
-
-    # Update last login
     user.last_login = datetime.now(timezone.utc)
     db.commit()
 
-    # Audit log
     await log_user_login(db=db, user=user, request=request)
-
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/users", response_model=UserResponse, status_code=201)
+async def create_user(
+    user_data: UserCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin)
+):
+    """
+    Create a user within the current admin's tenant.
+    Tenant admins can create OPERATOR and VIEWER only.
+    SUPER_ADMIN cannot use this endpoint (use POST /tenants instead).
+    """
+    if admin.role == UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=400,
+            detail="SUPER_ADMIN cannot create users directly. Use POST /tenants to create a tenant with its first admin."
+        )
+
+    # Tenant admins can only create OPERATOR or VIEWER
+    if user_data.role not in [UserRole.OPERATOR, UserRole.VIEWER]:
+        raise HTTPException(status_code=403, detail="Tenant admins can only create OPERATOR or VIEWER users")
+
+    if db.query(User).filter(User.username == user_data.username).first():
+        raise HTTPException(status_code=400, detail="Username already registered")
+
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_user = User(
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=get_password_hash(user_data.password),
+        full_name=user_data.full_name,
+        role=user_data.role,
+        tenant_id=admin.tenant_id,  # Always inherit admin's tenant
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    await log_user_created(
+        db=db, admin_user=admin,
+        new_user_id=str(new_user.id),
+        new_user_email=new_user.email,
+        new_user_role=new_user.role.value,
+        request=request
+    )
+    return new_user
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    """
-    Get current user information.
-    """
     return current_user
 
 
@@ -192,10 +134,6 @@ async def update_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Update own profile. Any authenticated user can update their full_name and email.
-    Changing password requires current_password for verification.
-    """
     if profile.full_name is not None:
         current_user.full_name = profile.full_name
 
@@ -216,15 +154,11 @@ async def update_my_profile(
     db.refresh(current_user)
 
     await create_audit_log(
-        db=db,
-        action="user.profile_update",
-        user=current_user,
-        resource_type="user",
-        resource_id=str(current_user.id),
+        db=db, action="user.profile_update", user=current_user,
+        resource_type="user", resource_id=str(current_user.id),
         details={"fields_updated": [f for f in ["full_name", "email", "password"] if getattr(profile, f if f != "password" else "new_password") is not None]},
         request=request
     )
-
     return current_user
 
 
@@ -234,10 +168,12 @@ async def list_users(
     admin: User = Depends(require_admin)
 ):
     """
-    List all users (Admin only).
+    List users. Tenant admins see only their own tenant's users.
+    SUPER_ADMIN sees all users.
     """
-    users = db.query(User).all()
-    return users
+    if admin.role == UserRole.SUPER_ADMIN:
+        return db.query(User).all()
+    return db.query(User).filter(User.tenant_id == admin.tenant_id).all()
 
 
 @router.patch("/users/{user_id}", response_model=UserResponse)
@@ -247,26 +183,28 @@ async def update_user(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    """
-    Update a user (Admin only).
-    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Update fields
+    # Tenant admin can only update users in their own tenant
+    if admin.role != UserRole.SUPER_ADMIN and user.tenant_id != admin.tenant_id:
+        raise HTTPException(status_code=403, detail="Cannot modify users outside your tenant")
+
     if user_update.email is not None:
         user.email = user_update.email
     if user_update.full_name is not None:
         user.full_name = user_update.full_name
     if user_update.role is not None:
+        # Tenant admin cannot assign ADMIN or SUPER_ADMIN
+        if admin.role != UserRole.SUPER_ADMIN and user_update.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            raise HTTPException(status_code=403, detail="Cannot assign that role")
         user.role = user_update.role
     if user_update.is_active is not None:
         user.is_active = user_update.is_active
 
     db.commit()
     db.refresh(user)
-
     return user
 
 
@@ -278,44 +216,34 @@ async def update_user_role(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    """
-    Update a user's role (Admin only).
-    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Validate role
+    if admin.role != UserRole.SUPER_ADMIN and user.tenant_id != admin.tenant_id:
+        raise HTTPException(status_code=403, detail="Cannot modify users outside your tenant")
+
     role_str = role_data.get('role')
-    if role_str not in ['ADMIN', 'OPERATOR', 'VIEWER']:
+    allowed = ['ADMIN', 'OPERATOR', 'VIEWER'] if admin.role != UserRole.SUPER_ADMIN else ['ADMIN', 'OPERATOR', 'VIEWER', 'SUPER_ADMIN']
+    if role_str not in allowed:
         raise HTTPException(status_code=400, detail="Invalid role")
 
     old_role = user.role.value
     user.role = UserRole[role_str]
-
     db.commit()
     db.refresh(user)
 
-    # Audit log
     await create_audit_log(
-        db=db,
-        action="user.role_update",
-        user=admin,
-        resource_type="user",
-        resource_id=str(user.id),
+        db=db, action="user.role_update", user=admin,
+        resource_type="user", resource_id=str(user.id),
         details={"old_role": old_role, "new_role": role_str},
         request=request
     )
-
     return user
 
 
 @router.get("/users/me/usage", response_model=UserUsageResponse)
 async def get_my_usage(current_user: User = Depends(get_current_user)):
-    """
-    Get the current user's notification usage and limits.
-    Available to all authenticated users.
-    """
     email_remaining = None
     sms_remaining = None
     if current_user.email_limit is not None:
@@ -341,13 +269,12 @@ async def update_user_limits(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    """
-    Set email/SMS sending limits for a user (Admin only).
-    Pass null to remove a limit (unlimited).
-    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if admin.role != UserRole.SUPER_ADMIN and user.tenant_id != admin.tenant_id:
+        raise HTTPException(status_code=403, detail="Cannot modify users outside your tenant")
 
     if limits.email_limit is not None:
         user.email_limit = limits.email_limit
@@ -363,15 +290,11 @@ async def update_user_limits(
     db.refresh(user)
 
     await create_audit_log(
-        db=db,
-        action="user.limits_update",
-        user=admin,
-        resource_type="user",
-        resource_id=str(user.id),
+        db=db, action="user.limits_update", user=admin,
+        resource_type="user", resource_id=str(user.id),
         details={"email_limit": user.email_limit, "sms_limit": user.sms_limit},
         request=request
     )
-
     return user
 
 
@@ -382,19 +305,11 @@ async def create_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Create a new API key for the current user.
-    WARNING: The full API key is only shown once! Store it securely.
-    """
-    # Generate API key
     full_key, key_hash, key_prefix = generate_api_key()
-
-    # Calculate expiration
     expires_at = None
     if key_data.expires_in_days:
         expires_at = datetime.now(timezone.utc) + timedelta(days=key_data.expires_in_days)
 
-    # Create API key record
     api_key = APIKey(
         user_id=current_user.id,
         key_name=key_data.key_name,
@@ -402,24 +317,17 @@ async def create_api_key(
         key_prefix=key_prefix,
         expires_at=expires_at
     )
-
     db.add(api_key)
     db.commit()
     db.refresh(api_key)
 
-    # Audit log
     await log_api_key_created(
-        db=db,
-        user=current_user,
+        db=db, user=current_user,
         api_key_id=str(api_key.id),
         key_name=key_data.key_name,
         request=request
     )
-
-    return {
-        "api_key": full_key,  # Only shown once!
-        "key_info": api_key
-    }
+    return {"api_key": full_key, "key_info": api_key}
 
 
 @router.get("/api-keys", response_model=List[APIKeyResponse])
@@ -427,11 +335,7 @@ async def list_api_keys(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    List all API keys for the current user.
-    """
-    api_keys = db.query(APIKey).filter(APIKey.user_id == current_user.id).all()
-    return api_keys
+    return db.query(APIKey).filter(APIKey.user_id == current_user.id).all()
 
 
 @router.delete("/api-keys/{key_id}", status_code=204)
@@ -440,21 +344,14 @@ async def delete_api_key(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Delete (revoke) an API key.
-    """
     api_key = db.query(APIKey).filter(
         APIKey.id == key_id,
         APIKey.user_id == current_user.id
     ).first()
-
     if not api_key:
         raise HTTPException(status_code=404, detail="API key not found")
-
     db.delete(api_key)
     db.commit()
-
-    return None
 
 
 @router.get("/audit-logs", response_model=List[AuditLogResponse])
@@ -463,9 +360,12 @@ async def list_audit_logs(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    """
-    List audit logs (Admin only).
-    Returns the most recent logs first.
-    """
-    logs = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
-    return logs
+    """Audit logs scoped to tenant. SUPER_ADMIN sees all."""
+    query = db.query(AuditLog).order_by(AuditLog.created_at.desc())
+    if admin.role != UserRole.SUPER_ADMIN:
+        # Filter to only logs from users in this tenant
+        tenant_user_ids = [
+            str(u.id) for u in db.query(User).filter(User.tenant_id == admin.tenant_id).all()
+        ]
+        query = query.filter(AuditLog.user_id.in_(tenant_user_ids))
+    return query.limit(limit).all()

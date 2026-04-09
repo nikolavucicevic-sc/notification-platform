@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 
 from app.database import get_db
 from app.models.notification import Notification, NotificationStatus, NotificationType
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.notification import NotificationCreate, NotificationResponse
 from app.messaging.publisher import publish_email_request
 from app.auth import get_current_user, require_operator_or_admin
@@ -17,25 +17,18 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/", response_model=NotificationResponse, status_code=201)
-@limiter.limit("10/minute")  # Max 10 notifications per minute per IP
+@limiter.limit("10/minute")
 async def create_notification(
     request: Request,
     notification: NotificationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_operator_or_admin)  # Require auth
+    current_user: User = Depends(require_operator_or_admin)
 ):
-    """
-    Create and send a notification with rate limiting (10 per minute per IP).
-
-    Rate Limit: 10 requests per minute per IP address.
-    Requires: OPERATOR or ADMIN role
-    """
     recipient_count = len(notification.customer_ids)
     channel = notification.notification_type
 
-    # Enforce per-user sending limits (skip for ADMIN)
-    from app.models.user import UserRole
-    if current_user.role != UserRole.ADMIN:
+    # Enforce per-user sending limits (skip for SUPER_ADMIN)
+    if current_user.role not in [UserRole.SUPER_ADMIN]:
         if channel == NotificationType.EMAIL and current_user.email_limit is not None:
             if current_user.email_sent + recipient_count > current_user.email_limit:
                 remaining = max(0, current_user.email_limit - current_user.email_sent)
@@ -57,17 +50,16 @@ async def create_notification(
         body=notification.body,
         customer_ids=[str(cid) for cid in notification.customer_ids],
         status=NotificationStatus.PENDING,
-        created_by_user_id=current_user.id
+        created_by_user_id=current_user.id,
+        tenant_id=current_user.tenant_id,
     )
     db.add(db_notification)
     db.commit()
     db.refresh(db_notification)
 
     await publish_email_request(db_notification)
-
     db_notification.status = NotificationStatus.PROCESSING
 
-    # Increment usage counters
     if channel == NotificationType.EMAIL:
         current_user.email_sent = (current_user.email_sent or 0) + recipient_count
     else:
@@ -76,17 +68,15 @@ async def create_notification(
     db.commit()
     db.refresh(db_notification)
 
-    # Audit log
     await log_notification_created(
-        db=db,
-        user=current_user,
+        db=db, user=current_user,
         notification_id=str(db_notification.id),
         notification_type=db_notification.notification_type.value,
         customer_count=recipient_count,
         request=request
     )
-
     return db_notification
+
 
 @router.patch("/{notification_id}/status", response_model=NotificationResponse)
 async def update_notification_status(
@@ -94,10 +84,7 @@ async def update_notification_status(
     status_data: dict,
     db: Session = Depends(get_db),
 ):
-    """
-    Internal endpoint called by email-sender and sms-sender to update
-    notification status after processing. No auth required (internal network only).
-    """
+    """Internal endpoint — called by email-sender/sms-sender. No auth required."""
     notification = db.query(Notification).filter(Notification.id == notification_id).first()
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
@@ -116,28 +103,33 @@ async def update_notification_status(
 @router.get("/", response_model=list[NotificationResponse])
 async def get_notifications(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # All authenticated users can view
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Get all notifications.
-    Requires: Any authenticated user
+    Get notifications. SUPER_ADMIN sees all. Others see only their tenant's notifications.
     """
-    return db.query(Notification).all()
+    if current_user.role == UserRole.SUPER_ADMIN:
+        return db.query(Notification).order_by(Notification.created_at.desc()).all()
+    return (
+        db.query(Notification)
+        .filter(Notification.tenant_id == current_user.tenant_id)
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
 
 
 @router.get("/{notification_id}", response_model=NotificationResponse)
 async def get_notification(
     notification_id: UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # All authenticated users can view
+    current_user: User = Depends(get_current_user)
 ):
-    """
-    Get a specific notification by ID.
-    Requires: Any authenticated user
-    """
     notification = db.query(Notification).filter(Notification.id == notification_id).first()
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
+
+    # Ensure tenant isolation
+    if current_user.role != UserRole.SUPER_ADMIN and notification.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Notification not found")
+
     return notification
-
-

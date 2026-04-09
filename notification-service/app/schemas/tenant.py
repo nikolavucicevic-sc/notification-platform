@@ -1,0 +1,37 @@
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+from datetime import datetime
+from uuid import UUID
+
+
+class TenantCreate(BaseModel):
+    name: str
+    email_limit: Optional[int] = Field(None, ge=0)
+    sms_limit: Optional[int] = Field(None, ge=0)
+    # First admin account for the tenant
+    admin_username: str
+    admin_email: EmailStr
+    admin_password: str = Field(..., min_length=8)
+    admin_full_name: Optional[str] = None
+
+
+class TenantUpdate(BaseModel):
+    name: Optional[str] = None
+    email_limit: Optional[int] = Field(None, ge=0)
+    sms_limit: Optional[int] = Field(None, ge=0)
+    is_active: Optional[bool] = None
+
+
+class TenantResponse(BaseModel):
+    id: UUID
+    name: str
+    email_limit: Optional[int]
+    sms_limit: Optional[int]
+    email_sent: int
+    sms_sent: int
+    is_active: bool
+    created_at: datetime
+    user_count: Optional[int] = None
+
+    class Config:
+        from_attributes = True

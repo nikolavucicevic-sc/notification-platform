@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, Boolean, Integer
+from sqlalchemy import Column, String, DateTime, Enum, Boolean, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 import uuid
@@ -8,9 +8,10 @@ from app.database import Base
 
 
 class UserRole(enum.Enum):
-    ADMIN = "ADMIN"  # Full access: manage users, send notifications, view everything
-    OPERATOR = "OPERATOR"  # Send notifications, view monitoring, retry failed messages
-    VIEWER = "VIEWER"  # Read-only access
+    SUPER_ADMIN = "SUPER_ADMIN"  # Platform owner: manages all tenants
+    ADMIN = "ADMIN"              # Tenant admin: manages their own tenant
+    OPERATOR = "OPERATOR"        # Sends notifications within their tenant
+    VIEWER = "VIEWER"            # Read-only within their tenant
 
 
 class User(Base):
@@ -27,7 +28,10 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime(timezone=True), nullable=True)
 
-    # Sending limits (None = unlimited)
+    # Tenant association — NULL for SUPER_ADMIN
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True, index=True)
+
+    # Sending limits (None = unlimited, inherited from tenant if not set)
     email_limit = Column(Integer, nullable=True, default=None)
     sms_limit = Column(Integer, nullable=True, default=None)
 
