@@ -7,6 +7,7 @@ import { TemplateManager } from './components/TemplateManager';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { Login } from './components/Login';
 import { AdminDashboard } from './components/AdminDashboard';
+import { TenantsDashboard } from './components/TenantsDashboard';
 import { UsageWidget } from './components/UsageWidget';
 import { ProfileModal } from './components/ProfileModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -14,9 +15,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import './App.css';
 
-type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates' | 'monitoring' | 'admin';
+type Tab = 'notifications' | 'customers' | 'scheduler' | 'templates' | 'monitoring' | 'admin' | 'tenants';
 
-const tabs: { id: Tab; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
+const tabs: { id: Tab; label: string; icon: React.ReactNode; adminOnly?: boolean; superAdminOnly?: boolean }[] = [
   {
     id: 'notifications',
     label: 'Notifications',
@@ -76,6 +77,17 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode; adminOnly?: boolean
       </svg>
     ),
   },
+  {
+    id: 'tenants',
+    label: 'Tenants',
+    superAdminOnly: true,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+  },
 ];
 
 function SunIcon() {
@@ -110,7 +122,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<Tab>('notifications');
   const [showProfile, setShowProfile] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { user, isAuthenticated, isAdmin, logout, loading, refreshUsage } = useAuth();
+  const { user, isAuthenticated, isAdmin, isSuperAdmin, logout, loading, refreshUsage } = useAuth();
 
   const handleNotificationSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -132,7 +144,11 @@ function AppContent() {
     return <Login />;
   }
 
-  const visibleTabs = tabs.filter(tab => !tab.adminOnly || isAdmin);
+  const visibleTabs = tabs.filter(tab => {
+    if (tab.superAdminOnly) return isSuperAdmin;
+    if (tab.adminOnly) return isAdmin;
+    return true;
+  });
 
   return (
     <div className="app">
@@ -199,6 +215,7 @@ function AppContent() {
         {activeTab === 'templates' && <div className="single-panel-view"><TemplateManager /></div>}
         {activeTab === 'monitoring' && <div className="single-panel-view"><MonitoringDashboard /></div>}
         {activeTab === 'admin' && isAdmin && <div className="single-panel-view"><AdminDashboard /></div>}
+        {activeTab === 'tenants' && isSuperAdmin && <div className="single-panel-view"><TenantsDashboard /></div>}
       </div>
     </div>
   );

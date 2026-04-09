@@ -7,8 +7,9 @@ interface User {
   email: string;
   username: string;
   full_name: string | null;
-  role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
   is_active: boolean;
+  tenant_id: string | null;
   email_limit: number | null;
   sms_limit: number | null;
   email_sent: number;
@@ -33,6 +34,7 @@ interface AuthContextType {
   refreshUsage: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   isAdmin: boolean;
   isOperatorOrAdmin: boolean;
   loading: boolean;
@@ -46,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load token from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('auth_token');
     if (savedToken) {
@@ -57,7 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Set up axios interceptor for auth token
   useEffect(() => {
     const interceptor = axios.interceptors.request.use((config) => {
       if (token) {
@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return config;
     });
-
     return () => axios.interceptors.request.eject(interceptor);
   }, [token]);
 
@@ -136,8 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUsage,
     refreshUser,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'ADMIN',
-    isOperatorOrAdmin: user?.role === 'ADMIN' || user?.role === 'OPERATOR',
+    isSuperAdmin: user?.role === 'SUPER_ADMIN',
+    isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
+    isOperatorOrAdmin: ['ADMIN', 'SUPER_ADMIN', 'OPERATOR'].includes(user?.role ?? ''),
     loading
   };
 
