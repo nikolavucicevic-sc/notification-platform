@@ -83,7 +83,8 @@ app = FastAPI(
     title="Bemby Notify API",
     version="2.0.0",
     description="Bemby Notify — enterprise notification platform with authentication, monitoring, and distributed tracing",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 # Add rate limiting

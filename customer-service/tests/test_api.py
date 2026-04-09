@@ -8,7 +8,7 @@ class TestCreateCustomer:
 
     def test_create_customer_success(self, client, sample_customer_data):
         """Test successful customer creation."""
-        response = client.post("/customers/", json=sample_customer_data)
+        response = client.post("/customers", json=sample_customer_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -22,7 +22,7 @@ class TestCreateCustomer:
 
     def test_create_customer_without_phone(self, client, sample_customer_data_no_phone):
         """Test customer creation without phone number."""
-        response = client.post("/customers/", json=sample_customer_data_no_phone)
+        response = client.post("/customers", json=sample_customer_data_no_phone)
 
         assert response.status_code == 201
         data = response.json()
@@ -32,10 +32,10 @@ class TestCreateCustomer:
     def test_create_customer_duplicate_email(self, client, sample_customer_data):
         """Test that duplicate email addresses are rejected."""
         # Create first customer
-        client.post("/customers/", json=sample_customer_data)
+        client.post("/customers", json=sample_customer_data)
 
         # Try to create second customer with same email
-        response = client.post("/customers/", json=sample_customer_data)
+        response = client.post("/customers", json=sample_customer_data)
 
         assert response.status_code == 400
         assert "Email already exists" in response.json()["detail"]
@@ -43,7 +43,7 @@ class TestCreateCustomer:
     def test_create_customer_missing_required_fields(self, client):
         """Test that missing required fields return validation error."""
         incomplete_data = {"email": "test@example.com"}
-        response = client.post("/customers/", json=incomplete_data)
+        response = client.post("/customers", json=incomplete_data)
 
         assert response.status_code == 422
 
@@ -54,7 +54,7 @@ class TestGetCustomers:
 
     def test_get_customers_empty(self, client):
         """Test getting customers when none exist."""
-        response = client.get("/customers/")
+        response = client.get("/customers")
 
         assert response.status_code == 200
         assert response.json() == []
@@ -62,10 +62,10 @@ class TestGetCustomers:
     def test_get_customers_multiple(self, client, sample_customer_data, sample_customer_data_no_phone):
         """Test getting multiple customers."""
         # Create two customers
-        client.post("/customers/", json=sample_customer_data)
-        client.post("/customers/", json=sample_customer_data_no_phone)
+        client.post("/customers", json=sample_customer_data)
+        client.post("/customers", json=sample_customer_data_no_phone)
 
-        response = client.get("/customers/")
+        response = client.get("/customers")
 
         assert response.status_code == 200
         data = response.json()
@@ -79,7 +79,7 @@ class TestGetCustomer:
     def test_get_customer_success(self, client, sample_customer_data):
         """Test successfully retrieving a customer by ID."""
         # Create a customer
-        create_response = client.post("/customers/", json=sample_customer_data)
+        create_response = client.post("/customers", json=sample_customer_data)
         customer_id = create_response.json()["id"]
 
         # Retrieve the customer
@@ -112,7 +112,7 @@ class TestUpdateCustomer:
     def test_update_customer_all_fields(self, client, sample_customer_data):
         """Test updating all customer fields."""
         # Create a customer
-        create_response = client.post("/customers/", json=sample_customer_data)
+        create_response = client.post("/customers", json=sample_customer_data)
         customer_id = create_response.json()["id"]
 
         # Update all fields
@@ -134,7 +134,7 @@ class TestUpdateCustomer:
     def test_update_customer_partial(self, client, sample_customer_data):
         """Test partial update of customer."""
         # Create a customer
-        create_response = client.post("/customers/", json=sample_customer_data)
+        create_response = client.post("/customers", json=sample_customer_data)
         customer_id = create_response.json()["id"]
         original_email = create_response.json()["email"]
 
@@ -164,7 +164,7 @@ class TestDeleteCustomer:
     def test_delete_customer_success(self, client, sample_customer_data):
         """Test successfully deleting a customer."""
         # Create a customer
-        create_response = client.post("/customers/", json=sample_customer_data)
+        create_response = client.post("/customers", json=sample_customer_data)
         customer_id = create_response.json()["id"]
 
         # Delete the customer

@@ -15,7 +15,7 @@ from app.services.scheduler import add_job_to_scheduler, remove_job_from_schedul
 router = APIRouter(prefix="/schedules", tags=["schedules"], redirect_slashes=False)
 
 
-@router.post("/", response_model=ScheduledNotificationResponse, status_code=201)
+@router.post("", response_model=ScheduledNotificationResponse, status_code=201)
 def create_scheduled_notification(
     schedule: ScheduledNotificationCreate,
     db: Session = Depends(get_db)
@@ -54,7 +54,7 @@ def create_scheduled_notification(
     return db_schedule
 
 
-@router.get("/", response_model=List[ScheduledNotificationResponse])
+@router.get("", response_model=List[ScheduledNotificationResponse])
 def get_scheduled_notifications(
     status: str = None,
     is_active: bool = None,

@@ -8,7 +8,7 @@ from app.database import get_db, settings
 router = APIRouter(prefix="/health", tags=["health"])
 
 
-@router.get("/")
+@router.get("")
 async def health_check(db: Session = Depends(get_db)):
     """
     Health check endpoint that verifies:
