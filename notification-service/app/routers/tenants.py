@@ -12,6 +12,7 @@ from app.auth import get_password_hash, require_super_admin
 router = APIRouter(prefix="/tenants", tags=["Tenants"], redirect_slashes=False)
 
 
+@router.post("/", response_model=TenantResponse, status_code=201)
 @router.post("", response_model=TenantResponse, status_code=201)
 async def create_tenant(
     data: TenantCreate,
@@ -56,6 +57,7 @@ async def create_tenant(
     return tenant
 
 
+@router.get("/", response_model=List[TenantResponse])
 @router.get("", response_model=List[TenantResponse])
 async def list_tenants(
     db: Session = Depends(get_db),
