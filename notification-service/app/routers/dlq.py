@@ -11,6 +11,7 @@ from app.audit import log_dlq_retry, log_dlq_clear
 router = APIRouter(prefix="/dlq", tags=["dlq"], redirect_slashes=False)
 
 
+@router.get("/")
 @router.get("")
 async def get_dlq_messages(
     current_user: User = Depends(get_current_user)  # All authenticated users

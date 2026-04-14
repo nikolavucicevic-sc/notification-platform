@@ -10,6 +10,7 @@ from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerRespons
 router = APIRouter(prefix="/customers", tags=["customers"], redirect_slashes=False)
 
 
+@router.post("/", response_model=CustomerResponse, status_code=201)
 @router.post("", response_model=CustomerResponse, status_code=201)
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     db_customer = Customer(**customer.model_dump())
@@ -23,6 +24,7 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     return db_customer
 
 
+@router.get("/", response_model=list[CustomerResponse])
 @router.get("", response_model=list[CustomerResponse])
 def get_customers(db: Session = Depends(get_db)):
     return db.query(Customer).all()
