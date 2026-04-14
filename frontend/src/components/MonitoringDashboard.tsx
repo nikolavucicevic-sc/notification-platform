@@ -66,9 +66,9 @@ const MAX_SPARKLINE = 20;
 export function MonitoringDashboard() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [services, setServices] = useState<ServiceHealth[]>([
-    { name: 'Customer Service', status: 'loading', endpoint: '/api/health/customers' },
-    { name: 'Scheduler Service', status: 'loading', endpoint: '/api/health/scheduler' },
-    { name: 'Template Service', status: 'loading', endpoint: '/api/health/templates' },
+    { name: 'Customer Service', status: 'loading', endpoint: '/health/customers' },
+    { name: 'Scheduler Service', status: 'loading', endpoint: '/health/scheduler' },
+    { name: 'Template Service', status: 'loading', endpoint: '/health/templates' },
   ]);
   const [dlq, setDlq] = useState<DLQResponse | null>(null);
   const [stats, setStats] = useState<NotificationStats | null>(null);
@@ -114,9 +114,9 @@ export function MonitoringDashboard() {
 
     // Fetch other service health independently so one failure doesn't block the rest
     const serviceEndpoints = [
-      { name: 'Customer Service', endpoint: '/api/health/customers' },
-      { name: 'Scheduler Service', endpoint: '/api/health/scheduler' },
-      { name: 'Template Service', endpoint: '/api/health/templates' },
+      { name: 'Customer Service', endpoint: '/health/customers' },
+      { name: 'Scheduler Service', endpoint: '/health/scheduler' },
+      { name: 'Template Service', endpoint: '/health/templates' },
     ];
     const results = await Promise.allSettled(
       serviceEndpoints.map(s => api.get(s.endpoint.replace('/api', '')))
