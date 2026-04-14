@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 interface Tenant {
   id: string;
@@ -45,7 +45,7 @@ export function TenantsDashboard() {
 
   const fetchTenants = async () => {
     try {
-      const res = await axios.get('/api/tenants/');
+      const res = await api.get('/api/tenants/');
       setTenants(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Failed to load tenants');
@@ -61,7 +61,7 @@ export function TenantsDashboard() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post('/api/tenants/', {
+      await api.post('/api/tenants/', {
         name: form.name,
         email_limit: form.email_limit ? parseInt(form.email_limit) : null,
         sms_limit: form.sms_limit ? parseInt(form.sms_limit) : null,
@@ -83,7 +83,7 @@ export function TenantsDashboard() {
 
   const toggleActive = async (tenant: Tenant) => {
     try {
-      await axios.patch(`/api/tenants/${tenant.id}`, { is_active: !tenant.is_active });
+      await api.patch(`/api/tenants/${tenant.id}`, { is_active: !tenant.is_active });
       toast.success(`Tenant ${tenant.is_active ? 'deactivated' : 'activated'}`);
       fetchTenants();
     } catch {
@@ -93,7 +93,7 @@ export function TenantsDashboard() {
 
   const saveLimits = async (tenantId: string) => {
     try {
-      await axios.patch(`/api/tenants/${tenantId}`, {
+      await api.patch(`/api/tenants/${tenantId}`, {
         email_limit: limitForm.email_limit !== '' ? parseInt(limitForm.email_limit) : null,
         sms_limit: limitForm.sms_limit !== '' ? parseInt(limitForm.sms_limit) : null,
       });

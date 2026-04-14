@@ -22,6 +22,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export default api;
+
 // Notification API
 export const notificationApi = {
   createNotification: async (notification: NotificationCreate): Promise<Notification> => {
