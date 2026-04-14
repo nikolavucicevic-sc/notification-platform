@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include notification_platform_sdk *.py
+recursive-include examples *.py
