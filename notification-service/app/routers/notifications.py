@@ -118,6 +118,46 @@ async def get_notifications(
     )
 
 
+@router.get("/stats/summary")
+async def get_notification_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Notification stats broken down by status and channel."""
+    base = db.query(Notification)
+    if current_user.role != UserRole.SUPER_ADMIN:
+        base = base.filter(Notification.tenant_id == current_user.tenant_id)
+
+    total = base.count()
+    by_status = {}
+    for s in NotificationStatus:
+        by_status[s.value.lower()] = base.filter(Notification.status == s).count()
+
+    by_channel = {}
+    for t in NotificationType:
+        by_channel[t.value.lower()] = base.filter(Notification.notification_type == t).count()
+
+    # Last 10 notifications for activity feed
+    recent = base.order_by(Notification.created_at.desc()).limit(10).all()
+
+    return {
+        "total": total,
+        "by_status": by_status,
+        "by_channel": by_channel,
+        "recent": [
+            {
+                "id": str(n.id),
+                "type": n.notification_type.value,
+                "status": n.status.value,
+                "subject": n.subject,
+                "recipient_count": len(n.customer_ids),
+                "created_at": n.created_at.isoformat(),
+            }
+            for n in recent
+        ],
+    }
+
+
 @router.get("/{notification_id}", response_model=NotificationResponse)
 async def get_notification(
     notification_id: UUID,
