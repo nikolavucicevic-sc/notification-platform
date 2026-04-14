@@ -84,7 +84,9 @@ app = FastAPI(
     version="2.0.0",
     description="Bemby Notify — enterprise notification platform with authentication, monitoring, and distributed tracing",
     lifespan=lifespan,
-    redirect_slashes=False
+    redirect_slashes=False,
+    docs_url="/docs",
+    openapi_url="/api/openapi.json",
 )
 
 # Add rate limiting

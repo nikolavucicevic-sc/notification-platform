@@ -20,7 +20,8 @@ app = FastAPI(
     title="Template Service",
     description="Service for managing notification templates with variable substitution",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    openapi_url="/api/templates/openapi.json",
 )
 
 # CORS middleware

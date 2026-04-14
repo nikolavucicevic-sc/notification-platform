@@ -29,7 +29,8 @@ app = FastAPI(
     version="1.0.0",
     description="Service for scheduling notifications",
     lifespan=lifespan,
-    redirect_slashes=False
+    redirect_slashes=False,
+    openapi_url="/api/schedules/openapi.json",
 )
 
 app.include_router(scheduled_notifications.router)
