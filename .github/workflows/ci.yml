@@ -76,6 +76,6 @@ jobs:
           script: |
             cd notification-platform
             git pull origin main
-            docker compose build
+            DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
             docker compose up -d --force-recreate
             docker system prune -f
