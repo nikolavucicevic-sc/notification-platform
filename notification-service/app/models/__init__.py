@@ -3,6 +3,7 @@ from app.models.notification import Notification, NotificationType, Notification
 from app.models.user import User, UserRole
 from app.models.api_key import APIKey
 from app.models.audit_log import AuditLog
+from app.models.password_reset import PasswordResetToken
 
 __all__ = [
     "Tenant",
@@ -12,5 +13,6 @@ __all__ = [
     "User",
     "UserRole",
     "APIKey",
-    "AuditLog"
+    "AuditLog",
+    "PasswordResetToken",
 ]

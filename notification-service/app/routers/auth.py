@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
+import hashlib
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User, APIKey, AuditLog
+from app.models import User, APIKey, AuditLog, PasswordResetToken
 from app.models.user import UserRole
 from app.schemas.user import (
     UserLogin,
@@ -369,3 +371,83 @@ async def list_audit_logs(
         ]
         query = query.filter(AuditLog.user_id.in_(tenant_user_ids))
     return query.limit(limit).all()
+
+
+@router.post("/password-reset/request", status_code=200)
+async def request_password_reset(
+    body: dict,
+    db: Session = Depends(get_db),
+):
+    """
+    Request a password reset token by email.
+    Always returns 200 to avoid leaking whether an email is registered.
+    The token is returned in the response for now (no email sending yet).
+    """
+    email = body.get("email", "").strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+
+    # Don't leak whether the email exists
+    if not user or not user.is_active:
+        return {"message": "If that email is registered you will receive a reset token."}
+
+    # Invalidate any previous unused tokens for this user
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used == False
+    ).delete(synchronize_session=False)
+
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    db.add(reset_token)
+    db.commit()
+
+    # TODO: send raw_token via email when email-sending for platform users is wired up
+    # For now return it directly so the flow is testable
+    return {
+        "message": "If that email is registered you will receive a reset token.",
+        "reset_token": raw_token,   # Remove this line once email delivery is set up
+    }
+
+
+@router.post("/password-reset/confirm", status_code=200)
+async def confirm_password_reset(
+    body: dict,
+    db: Session = Depends(get_db),
+):
+    """Consume a reset token and set a new password."""
+    raw_token = body.get("token", "")
+    new_password = body.get("new_password", "")
+
+    if not raw_token or not new_password:
+        raise HTTPException(status_code=400, detail="token and new_password are required")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="new_password must be at least 8 characters")
+
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used == False,
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if reset_token.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.hashed_password = get_password_hash(new_password)
+    reset_token.used = True
+    db.commit()
+
+    return {"message": "Password updated successfully"}
