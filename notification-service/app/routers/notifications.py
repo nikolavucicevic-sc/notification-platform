@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func, cast, Date
 from uuid import UUID
+from datetime import datetime, timedelta, timezone
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 import httpx
@@ -188,6 +190,49 @@ async def get_notification_stats(
             for n in recent
         ],
     }
+
+
+@router.get("/stats/trends")
+async def get_notification_trends(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Daily sent/failed counts for the last N days (default 30). Used for analytics charts."""
+    days = min(max(days, 1), 90)  # clamp between 1 and 90
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    base = db.query(Notification).filter(Notification.created_at >= since)
+    if current_user.role != UserRole.SUPER_ADMIN:
+        base = base.filter(Notification.tenant_id == current_user.tenant_id)
+
+    rows = (
+        base
+        .with_entities(
+            cast(Notification.created_at, Date).label("day"),
+            Notification.status,
+            func.count().label("count"),
+        )
+        .group_by(cast(Notification.created_at, Date), Notification.status)
+        .order_by(cast(Notification.created_at, Date))
+        .all()
+    )
+
+    # Build a complete date range so frontend gets zeros for quiet days
+    date_index = {}
+    for i in range(days):
+        day = (datetime.now(timezone.utc) - timedelta(days=days - 1 - i)).date()
+        date_index[day] = {"date": day.isoformat(), "sent": 0, "failed": 0}
+
+    for row in rows:
+        day = row.day
+        if day in date_index:
+            if row.status == NotificationStatus.COMPLETED:
+                date_index[day]["sent"] += row.count
+            elif row.status == NotificationStatus.FAILED:
+                date_index[day]["failed"] += row.count
+
+    return {"days": days, "data": list(date_index.values())}
 
 
 @router.get("/{notification_id}", response_model=NotificationResponse)

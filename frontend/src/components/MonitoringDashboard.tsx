@@ -54,6 +54,17 @@ interface NotificationStats {
   }[];
 }
 
+interface TrendDay {
+  date: string;
+  sent: number;
+  failed: number;
+}
+
+interface TrendsData {
+  days: number;
+  data: TrendDay[];
+}
+
 const STATUS_COLORS: Record<string, string> = {
   completed: 'var(--success)',
   failed: 'var(--danger)',
@@ -72,6 +83,7 @@ export function MonitoringDashboard() {
   ]);
   const [dlq, setDlq] = useState<DLQResponse | null>(null);
   const [stats, setStats] = useState<NotificationStats | null>(null);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -87,15 +99,17 @@ export function MonitoringDashboard() {
 
   const fetchData = async () => {
     try {
-      const [healthRes, dlqRes, statsRes] = await Promise.all([
+      const [healthRes, dlqRes, statsRes, trendsRes] = await Promise.all([
         api.get('/health/'),
         api.get('/dlq/'),
         api.get('/notifications/stats/summary'),
+        api.get('/notifications/stats/trends'),
       ]);
 
       setHealth(healthRes.data);
       setDlq(dlqRes.data);
       setStats(statsRes.data);
+      setTrends(trendsRes.data);
 
       // Track queue depth history for sparkline
       const queues = healthRes.data?.checks?.redis?.queues;
@@ -162,6 +176,41 @@ export function MonitoringDashboard() {
     return d.toLocaleString();
   };
 
+  const renderTrendsChart = (data: TrendDay[]) => {
+    if (!data || data.length === 0) return null;
+    const maxVal = Math.max(...data.map(d => Math.max(d.sent, d.failed)), 1);
+    const chartH = 80;
+    const barW = 8;
+    const gap = 3;
+    const totalW = data.length * (barW * 2 + gap + 2);
+
+    return (
+      <div className="trends-chart-wrap">
+        <div className="trends-legend">
+          <span className="legend-sent">Sent</span>
+          <span className="legend-failed">Failed</span>
+        </div>
+        <svg width="100%" viewBox={`0 0 ${totalW} ${chartH + 20}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+          {data.map((d, i) => {
+            const x = i * (barW * 2 + gap + 2);
+            const sentH = Math.max((d.sent / maxVal) * chartH, d.sent > 0 ? 2 : 0);
+            const failH = Math.max((d.failed / maxVal) * chartH, d.failed > 0 ? 2 : 0);
+            const label = d.date.slice(5); // MM-DD
+            return (
+              <g key={d.date}>
+                <rect x={x} y={chartH - sentH} width={barW} height={sentH} fill="var(--success, #22c55e)" opacity="0.85" rx="1" />
+                <rect x={x + barW + 1} y={chartH - failH} width={barW} height={failH} fill="var(--danger, #ef4444)" opacity="0.85" rx="1" />
+                {i % 5 === 0 && (
+                  <text x={x + barW} y={chartH + 14} textAnchor="middle" fontSize="7" fill="var(--text-muted, #9ca3af)">{label}</text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  };
+
   const renderSparkline = (values: number[], color: string) => {
     if (values.length < 2) return null;
     const max = Math.max(...values, 1);
@@ -204,6 +253,14 @@ export function MonitoringDashboard() {
         <div className={`status-indicator ${allHealthy ? 'healthy' : 'unhealthy'}`} />
         <span>{allHealthy ? 'All systems operational' : 'Some services need attention'}</span>
       </div>
+
+      {/* Trends Chart */}
+      {trends && trends.data.length > 0 && (
+        <div className="monitoring-section">
+          <h3>Delivery Trends — Last {trends.days} Days</h3>
+          {renderTrendsChart(trends.data)}
+        </div>
+      )}
 
       {/* Notification Stats */}
       {stats && (
