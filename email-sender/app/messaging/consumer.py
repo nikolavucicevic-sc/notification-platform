@@ -29,11 +29,33 @@ async def update_notification_status(notification_id: str, status: str):
         )
 
 
+async def fetch_tenant_config(tenant_id: str) -> dict:
+    """Fetch display_name and reply_to_email for a tenant from notification-service."""
+    if not tenant_id:
+        return {}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.notification_service_url}/tenants/{tenant_id}/branding",
+                timeout=5
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "display_name": data.get("display_name"),
+                    "reply_to_email": data.get("reply_to_email"),
+                }
+    except Exception as e:
+        logger.warning("tenant_config_fetch_failed", tenant_id=tenant_id, error=str(e))
+    return {}
+
+
 async def process_email_request(message: dict, redis_queue: RedisQueue):
     notification_id = message.get("notification_id")
     subject = message.get("subject")
     email_body = message.get("body")
     customer_ids = message.get("customer_ids", [])
+    tenant_id = message.get("tenant_id")
     retry_count = message.get("retry_count", 0)
 
     logger.info(
@@ -44,9 +66,11 @@ async def process_email_request(message: dict, redis_queue: RedisQueue):
         customer_count=len(customer_ids)
     )
 
+    tenant_config = await fetch_tenant_config(tenant_id)
+
     try:
         for customer_id in customer_ids:
-            result = await send_email(customer_id, subject, email_body)
+            result = await send_email(customer_id, subject, email_body, tenant_config)
             logger.info(
                 "email_sent",
                 notification_id=notification_id,

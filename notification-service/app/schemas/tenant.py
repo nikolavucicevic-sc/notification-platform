@@ -6,6 +6,8 @@ from uuid import UUID
 
 class TenantCreate(BaseModel):
     name: str
+    display_name: Optional[str] = None
+    reply_to_email: Optional[EmailStr] = None
     email_limit: Optional[int] = Field(None, ge=0)
     sms_limit: Optional[int] = Field(None, ge=0)
     # First admin account for the tenant
@@ -17,6 +19,8 @@ class TenantCreate(BaseModel):
 
 class TenantUpdate(BaseModel):
     name: Optional[str] = None
+    display_name: Optional[str] = None
+    reply_to_email: Optional[EmailStr] = None
     email_limit: Optional[int] = Field(None, ge=0)
     sms_limit: Optional[int] = Field(None, ge=0)
     is_active: Optional[bool] = None
@@ -25,6 +29,8 @@ class TenantUpdate(BaseModel):
 class TenantResponse(BaseModel):
     id: UUID
     name: str
+    display_name: Optional[str] = None
+    reply_to_email: Optional[str] = None
     email_limit: Optional[int]
     sms_limit: Optional[int]
     email_sent: int

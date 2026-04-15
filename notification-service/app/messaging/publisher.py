@@ -26,6 +26,7 @@ async def publish_email_request(notification: Notification):
             "subject": notification.subject,
             "body": notification.body,
             "customer_ids": notification.customer_ids,
+            "tenant_id": str(notification.tenant_id) if notification.tenant_id else None,
             "retry_count": 0
         }
 

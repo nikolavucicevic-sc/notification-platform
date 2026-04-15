@@ -34,6 +34,8 @@ async def create_tenant(
     # Create tenant
     tenant = Tenant(
         name=data.name,
+        display_name=data.display_name,
+        reply_to_email=data.reply_to_email,
         email_limit=data.email_limit,
         sms_limit=data.sms_limit,
     )
@@ -105,6 +107,11 @@ async def update_tenant(
     if data.is_active is not None:
         tenant.is_active = data.is_active
 
+    if "display_name" in data.model_fields_set:
+        tenant.display_name = data.display_name
+    if "reply_to_email" in data.model_fields_set:
+        tenant.reply_to_email = data.reply_to_email
+
     # Allow setting limits to None (unlimited) explicitly
     if "email_limit" in data.model_fields_set:
         tenant.email_limit = data.email_limit
@@ -115,6 +122,21 @@ async def update_tenant(
     db.refresh(tenant)
     tenant.user_count = db.query(User).filter(User.tenant_id == tenant.id).count()
     return tenant
+
+
+@router.get("/{tenant_id}/branding")
+async def get_tenant_branding(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+):
+    """Internal endpoint — called by email-sender. No auth required. Returns branding fields only."""
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return {
+        "display_name": tenant.display_name,
+        "reply_to_email": tenant.reply_to_email,
+    }
 
 
 @router.get("/{tenant_id}/users", response_model=List[UserResponse])
