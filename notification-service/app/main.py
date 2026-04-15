@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from app.database import engine, Base, settings
-from app.routers import notifications, health, dlq, auth, tenants
+from app.routers import notifications, health, dlq, auth, tenants, billing
 from app.db_utils import wait_for_db
 from app.redis_utils import wait_for_redis
 from app.metrics import metrics_endpoint, MetricsMiddleware
@@ -125,6 +125,7 @@ except Exception as e:
 app.include_router(auth.router)
 app.include_router(tenants.router)
 app.include_router(notifications.router)
+app.include_router(billing.router)
 app.include_router(health.router)
 app.include_router(dlq.router)
 

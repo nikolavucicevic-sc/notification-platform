@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
+from app.models.tenant import PlanTier
 
 
 class TenantCreate(BaseModel):
@@ -36,6 +37,7 @@ class TenantResponse(BaseModel):
     email_sent: int
     sms_sent: int
     is_active: bool
+    plan: PlanTier = PlanTier.FREE
     created_at: datetime
     user_count: Optional[int] = None
 

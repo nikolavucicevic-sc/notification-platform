@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     db_pool_timeout: int = 30
     db_pool_recycle: int = 3600
 
+    # Stripe billing
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_pro: str = ""       # Stripe Price ID for PRO plan
+    stripe_price_business: str = ""  # Stripe Price ID for BUSINESS plan
+
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     json_logs: bool = os.getenv("JSON_LOGS", "true").lower() == "true"
