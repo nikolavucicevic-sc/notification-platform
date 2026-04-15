@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     redis_email_queue: str = "email:queue"
     redis_sms_queue: str = "sms:queue"
+    template_service_url: str = "http://template-service:8004"
 
     # Environment
     environment: str = os.getenv("ENVIRONMENT", "development")

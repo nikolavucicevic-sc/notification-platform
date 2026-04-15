@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import httpx
 
-from app.database import get_db
+from app.database import get_db, settings
 from app.models.notification import Notification, NotificationStatus, NotificationType
 from app.models.user import User, UserRole
 from app.schemas.notification import NotificationCreate, NotificationResponse
@@ -28,6 +29,35 @@ async def create_notification(
     recipient_count = len(notification.customer_ids)
     channel = notification.notification_type
 
+    # Resolve template if template_id provided
+    subject = notification.subject
+    body = notification.body
+    if notification.template_id:
+        try:
+            async with httpx.AsyncClient() as client:
+                render_resp = await client.post(
+                    f"{settings.template_service_url}/templates/render",
+                    json={
+                        "template_id": notification.template_id,
+                        "variables": notification.template_variables or {}
+                    },
+                    timeout=5
+                )
+            if render_resp.status_code == 404:
+                raise HTTPException(status_code=400, detail=f"Template {notification.template_id} not found")
+            if render_resp.status_code != 200:
+                raise HTTPException(status_code=502, detail="Template service error")
+            rendered = render_resp.json()
+            body = rendered.get("body") or body
+            subject = rendered.get("subject") or subject
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Could not reach template service: {e}")
+
+    if not body:
+        raise HTTPException(status_code=400, detail="body is required when not using a template")
+
     # Enforce per-user sending limits (skip for SUPER_ADMIN)
     if current_user.role not in [UserRole.SUPER_ADMIN]:
         if channel == NotificationType.EMAIL and current_user.email_limit is not None:
@@ -47,8 +77,8 @@ async def create_notification(
 
     db_notification = Notification(
         notification_type=notification.notification_type,
-        subject=notification.subject,
-        body=notification.body,
+        subject=subject,
+        body=body,
         customer_ids=[str(cid) for cid in notification.customer_ids],
         status=NotificationStatus.PENDING,
         created_by_user_id=current_user.id,
