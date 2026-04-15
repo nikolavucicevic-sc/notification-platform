@@ -4,35 +4,32 @@ from uuid import UUID
 import re
 import bleach
 
+# E.164 international format: + followed by 7-15 digits
+E164_PATTERN = r"^\+[1-9]\d{6,14}$"
+
 
 class CustomerCreate(BaseModel):
-    email: EmailStr  # Validates email format
+    email: EmailStr
     phone_number: str | None = Field(
         None,
-        pattern=r"^\+3816[0-5]\d{6,7}$",  # E.164 format: +1234567890
-        description="Serbian mobile number (e.g., +38164123456)"
+        pattern=E164_PATTERN,
+        description="Phone number in E.164 format (e.g., +38164123456, +14155552671)"
     )
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
 
     @validator('first_name', 'last_name')
     def sanitize_name(cls, v):
-        """Remove HTML tags and dangerous characters from names."""
         if v:
-            # Remove HTML tags
             cleaned = bleach.clean(v, tags=[], strip=True)
-            # Remove excessive whitespace
             cleaned = " ".join(cleaned.split())
             return cleaned
         return v
 
     @validator('phone_number')
     def validate_phone(cls, v):
-        """Additional phone validation."""
-        if v and not re.match(r"^\+3816[0-5]\d{6,7}$", v):
-            raise ValueError(
-                "Phone number must be in format +381 6X XXXXXXX (e.g., +38164123456)"
-            )
+        if v and not re.match(E164_PATTERN, v):
+            raise ValueError("Phone number must be in E.164 format (e.g., +38164123456)")
         return v
 
 
@@ -40,15 +37,14 @@ class CustomerUpdate(BaseModel):
     email: EmailStr | None = None
     phone_number: str | None = Field(
         None,
-        pattern=r"^\+3816[0-5]\d{6,7}$",
-        description="Serbian mobile number (e.g., +38164123456)"
+        pattern=E164_PATTERN,
+        description="Phone number in E.164 format (e.g., +38164123456, +14155552671)"
     )
     first_name: str | None = Field(None, min_length=1, max_length=100)
     last_name: str | None = Field(None, min_length=1, max_length=100)
 
     @validator('first_name', 'last_name')
     def sanitize_name(cls, v):
-        """Remove HTML tags and dangerous characters from names."""
         if v:
             cleaned = bleach.clean(v, tags=[], strip=True)
             cleaned = " ".join(cleaned.split())
@@ -57,11 +53,8 @@ class CustomerUpdate(BaseModel):
 
     @validator('phone_number')
     def validate_phone(cls, v):
-        """Additional phone validation."""
-        if v and not re.match(r"^\+3816[0-5]\d{6,7}$", v):
-            raise ValueError(
-                "Phone number must be in format +381 6X XXXXXXX (e.g., +38164123456)"
-            )
+        if v and not re.match(E164_PATTERN, v):
+            raise ValueError("Phone number must be in E.164 format (e.g., +38164123456)")
         return v
 
 
