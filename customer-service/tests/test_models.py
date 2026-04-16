@@ -42,8 +42,11 @@ class TestCustomerModel:
         assert customer.email == "test@example.com"
 
     def test_customer_email_uniqueness(self, db_session):
-        """Test that email must be unique."""
+        """Test that email must be unique within the same tenant."""
+        import uuid
+        tenant_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
         customer1 = Customer(
+            tenant_id=tenant_id,
             email="test@example.com",
             first_name="John",
             last_name="Doe"
@@ -52,13 +55,14 @@ class TestCustomerModel:
         db_session.commit()
 
         customer2 = Customer(
+            tenant_id=tenant_id,
             email="test@example.com",
             first_name="Jane",
             last_name="Smith"
         )
         db_session.add(customer2)
 
-        with pytest.raises(Exception):  # IntegrityError or similar
+        with pytest.raises(Exception):  # IntegrityError — duplicate email within same tenant
             db_session.commit()
 
     def test_customer_timestamps(self, db_session):
