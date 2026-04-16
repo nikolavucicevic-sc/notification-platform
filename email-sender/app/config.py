@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # Brevo configuration (required when email_provider=brevo)
     brevo_api_key: str = ""
     brevo_from_email: str = ""
+    brevo_sending_domain: str = ""  # e.g. "bembynotify.com" — must be verified in Brevo
 
     # Retry configuration
     max_retry_attempts: int = 3

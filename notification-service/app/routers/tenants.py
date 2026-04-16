@@ -36,6 +36,7 @@ async def create_tenant(
         name=data.name,
         display_name=data.display_name,
         reply_to_email=data.reply_to_email,
+        email_alias=data.email_alias,
         email_limit=data.email_limit,
         sms_limit=data.sms_limit,
     )
@@ -111,6 +112,8 @@ async def update_tenant(
         tenant.display_name = data.display_name
     if "reply_to_email" in data.model_fields_set:
         tenant.reply_to_email = data.reply_to_email
+    if "email_alias" in data.model_fields_set:
+        tenant.email_alias = data.email_alias
 
     # Allow setting limits to None (unlimited) explicitly
     if "email_limit" in data.model_fields_set:
@@ -136,6 +139,7 @@ async def get_tenant_branding(
     return {
         "display_name": tenant.display_name,
         "reply_to_email": tenant.reply_to_email,
+        "email_alias": tenant.email_alias,
     }
 
 

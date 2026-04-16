@@ -44,6 +44,7 @@ async def fetch_tenant_config(tenant_id: str) -> dict:
                 return {
                     "display_name": data.get("display_name"),
                     "reply_to_email": data.get("reply_to_email"),
+                    "email_alias": data.get("email_alias"),
                 }
     except Exception as e:
         logger.warning("tenant_config_fetch_failed", tenant_id=tenant_id, error=str(e))

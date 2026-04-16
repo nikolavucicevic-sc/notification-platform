@@ -18,8 +18,9 @@ class Tenant(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, unique=True, nullable=False, index=True)
-    display_name = Column(String, nullable=True)        # e.g. "Acme Notifications" — shown in From header
+    display_name = Column(String, nullable=True)        # e.g. "Acme" — shown as sender name
     reply_to_email = Column(String, nullable=True)      # e.g. "support@acme.com" — Reply-To header
+    email_alias = Column(String, nullable=True)         # e.g. "acme" — becomes acme@yourdomain.com
     email_limit = Column(Integer, nullable=True, default=None)   # None = unlimited
     sms_limit = Column(Integer, nullable=True, default=None)
     email_sent = Column(Integer, nullable=False, default=0)

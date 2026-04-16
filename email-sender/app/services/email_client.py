@@ -56,7 +56,15 @@ async def _send_via_brevo(customer_id: str, subject: str, body: str, tenant_conf
             logger.warning("customer_no_email", customer_id=customer_id)
             return {"customer_id": customer_id, "success": False, "error": "Customer has no email address"}
 
-        sender = {"email": settings.brevo_from_email}
+        # Build From address: alias@domain if both are configured, else fall back to global
+        alias = tenant_config.get("email_alias")
+        domain = settings.brevo_sending_domain
+        if alias and domain:
+            from_email = f"{alias}@{domain}"
+        else:
+            from_email = settings.brevo_from_email
+
+        sender = {"email": from_email}
         if tenant_config.get("display_name"):
             sender["name"] = tenant_config["display_name"]
 

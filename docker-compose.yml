@@ -197,6 +197,7 @@ services:
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-wiremock}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       BREVO_FROM_EMAIL: ${BREVO_FROM_EMAIL:-}
+      BREVO_SENDING_DOMAIN: ${BREVO_SENDING_DOMAIN:-}
     depends_on:
       redis:
         condition: service_healthy
