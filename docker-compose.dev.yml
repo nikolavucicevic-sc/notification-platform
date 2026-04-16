@@ -1,0 +1,76 @@
+# Development-only services — NOT deployed to production
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+
+  wiremock:
+    image: wiremock/wiremock:latest
+    container_name: notification-wiremock
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./wiremock:/home/wiremock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - notification-network
+
+  locust:
+    build:
+      context: ./locust
+      dockerfile: Dockerfile
+    container_name: locust
+    ports:
+      - "8090:8089"
+    depends_on:
+      - notification-service
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - notification-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - notification-network
+
+  # In dev, email-sender points to wiremock instead of real Brevo
+  email-sender:
+    environment:
+      EMAIL_PROVIDER: wiremock
+      WIREMOCK_URL: http://wiremock:8080
+    depends_on:
+      wiremock:
+        condition: service_healthy
+
+  # In dev, sms-sender points to wiremock instead of real Twilio
+  sms-sender:
+    environment:
+      SMS_PROVIDER: wiremock
+      SMS_API_URL: http://wiremock:8080/sms/send
+    depends_on:
+      wiremock:
+        condition: service_healthy

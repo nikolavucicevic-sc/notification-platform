@@ -94,7 +94,12 @@ STRIPE_PRICE_BUSINESS=price_...
 
 ## Development
 
-### Run locally
+### Run locally (dev — includes wiremock, locust, jaeger)
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+### Run in production mode (no dev tools)
 ```bash
 docker compose up -d
 ```
@@ -104,7 +109,7 @@ docker compose up -d
 # All services
 ./run-tests.sh
 
-# Single service
+# Single service (uses requirements-test.txt)
 cd customer-service && pytest -m unit -v
 cd notification-service && pytest -m unit -v
 cd scheduler-service && pytest -m unit -v

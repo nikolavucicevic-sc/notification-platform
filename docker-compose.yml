@@ -51,29 +51,6 @@ services:
     networks:
       - notification-network
 
-  wiremock:
-    image: wiremock/wiremock:latest
-    container_name: notification-wiremock
-    ports:
-      - "8089:8080"
-    volumes:
-      - ./wiremock:/home/wiremock
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-        reservations:
-          memory: 64M
-    networks:
-      - notification-network
-
   notification-service:
     build:
       context: ./notification-service
@@ -190,26 +167,24 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       REDIS_EMAIL_QUEUE: email:queue
-      WIREMOCK_URL: http://wiremock:8080
       CUSTOMER_SERVICE_URL: http://customer-service:8001
       NOTIFICATION_SERVICE_URL: http://notification-service:8002
-      # Set EMAIL_PROVIDER=brevo and supply credentials to use real sending:
-      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-wiremock}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-brevo}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       BREVO_FROM_EMAIL: ${BREVO_FROM_EMAIL:-}
       BREVO_SENDING_DOMAIN: ${BREVO_SENDING_DOMAIN:-}
     depends_on:
       redis:
         condition: service_healthy
-      wiremock:
-        condition: service_healthy
+      customer-service:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 256M
-        reservations:
           memory: 128M
+        reservations:
+          memory: 64M
     networks:
       - notification-network
 
@@ -222,17 +197,13 @@ services:
       REDIS_URL: redis://redis:6379
       REDIS_SMS_QUEUE: sms:queue
       CUSTOMER_SERVICE_URL: http://customer-service:8001
-      SMS_API_URL: http://wiremock:8080/sms/send
       NOTIFICATION_SERVICE_URL: http://notification-service:8002
-      # Set SMS_PROVIDER=twilio and supply credentials to use real sending:
-      SMS_PROVIDER: ${SMS_PROVIDER:-wiremock}
+      SMS_PROVIDER: ${SMS_PROVIDER:-twilio}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
     depends_on:
       redis:
-        condition: service_healthy
-      wiremock:
         condition: service_healthy
       customer-service:
         condition: service_started
@@ -240,9 +211,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 64M
         reservations:
-          memory: 128M
+          memory: 32M
     networks:
       - notification-network
 
@@ -268,8 +239,6 @@ services:
     networks:
       - notification-network
 
-  # Bundle G: DevOps & Performance - Monitoring Stack
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -281,7 +250,14 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
     networks:
       - notification-network
 
@@ -302,31 +278,12 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
-    networks:
-      - notification-network
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: jaeger
-    ports:
-      - "6831:6831/udp"  # Jaeger agent
-      - "16686:16686"    # Jaeger UI
-    environment:
-      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
-    restart: unless-stopped
-    networks:
-      - notification-network
-
-  locust:
-    build:
-      context: ./locust
-      dockerfile: Dockerfile
-    container_name: locust
-    ports:
-      - "8090:8089"
-    depends_on:
-      - notification-service
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
     networks:
       - notification-network
 
