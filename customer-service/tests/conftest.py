@@ -1,6 +1,6 @@
 import pytest
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
@@ -24,34 +24,15 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 FAKE_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 
 
-def _create_tables(eng):
-    """Create tenants stub first (FK target), then all app tables."""
-    with eng.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS tenants (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL
-            )
-        """))
-        conn.execute(text(
-            "INSERT OR IGNORE INTO tenants (id, name) VALUES (:id, :name)"
-        ), {"id": FAKE_TENANT_ID, "name": "Test Tenant"})
-        conn.commit()
-    Base.metadata.create_all(bind=eng)
-
-
 @pytest.fixture(scope="function")
 def db_session():
-    _create_tables(engine)
+    Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine)
-        with engine.connect() as conn:
-            conn.execute(text("DROP TABLE IF EXISTS tenants"))
-            conn.commit()
 
 
 @pytest.fixture(scope="function")
@@ -62,7 +43,6 @@ def client(db_session):
         finally:
             pass
 
-    # Bypass JWT auth — inject a fixed tenant context
     def override_auth():
         return (FAKE_TENANT_ID, "ADMIN")
 

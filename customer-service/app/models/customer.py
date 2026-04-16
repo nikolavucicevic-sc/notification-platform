@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 import uuid
@@ -10,7 +10,7 @@ class Customer(Base):
     __tablename__ = "customers"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey('tenants.id', ondelete='CASCADE'), nullable=True, index=True)
+    tenant_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # FK to tenants.id enforced by migration
     email = Column(String, nullable=False)
     phone_number = Column(String, nullable=True)
     first_name = Column(String, nullable=False)
