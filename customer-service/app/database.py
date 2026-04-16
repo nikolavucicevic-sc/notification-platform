@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str
     app_host: str = "0.0.0.0"
     app_port: int = 8001
+    secret_key: str = "your-secret-key-here-change-in-production"  # Must match notification-service
 
     class Config:
         env_file = ".env"
