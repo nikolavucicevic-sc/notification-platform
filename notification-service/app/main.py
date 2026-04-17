@@ -99,9 +99,8 @@ app.add_middleware(UserContextMiddleware)  # Add user context to logs
 
 # Add CORS middleware
 cors_origins = ["*"] if settings.environment != "production" else [
-    "http://3.74.152.191:3000",  # EC2 instance
-    "http://3.74.152.191",       # EC2 instance without port
-    "https://yourdomain.com",     # Replace with actual production domain when available
+    "https://bemby.app",
+    "https://www.bemby.app",
 ]
 app.add_middleware(
     CORSMiddleware,

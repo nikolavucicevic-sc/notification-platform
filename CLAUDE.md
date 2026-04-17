@@ -4,7 +4,7 @@
 
 Multi-tenant SaaS notification platform ("Bemby Notify"). Tenants sign up, get API keys, and use the platform to send emails and SMS to their customers. Built with FastAPI microservices + React frontend on a single EC2 instance.
 
-**Production:** `http://3.74.152.191:3000`
+**Production:** `https://bemby.app` (EC2: `3.74.152.191`, Cloudflare proxied)
 **GitHub:** `nikolavucicevic-sc/notification-platform`
 
 ---
