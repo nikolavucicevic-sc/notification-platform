@@ -24,7 +24,7 @@ services=(
     "customer-service:8001:http://localhost:8001/health"
     "scheduler-service:8003:http://localhost:8003/health"
     "template-service:8004:http://localhost:8004/health"
-    "frontend:3000:https://bemby.app/api/health/"
+    "frontend:80:https://bemby.app/api/health/"
     "postgres:5432:postgres"
     "redis:6379:redis"
 )
